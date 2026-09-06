@@ -1,0 +1,97 @@
+{
+  "name": "NewQuest",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "$className": "ReplicatedStorage",
+      "$path": "src/ReplicatedStorage",
+      "$ignoreUnknownInstances": true
+    },
+    "StarterPlayer": {
+      "$className": "StarterPlayer",
+      "StarterPlayerScripts": {
+        "$className": "StarterPlayerScripts",
+        "$path": "src/StarterPlayer/StarterPlayerScripts",
+        "$ignoreUnknownInstances": true
+      },
+      "$ignoreUnknownInstances": true
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$ignoreUnknownInstances": true
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$ignoreUnknownInstances": true,
+      "CutsceneMarkers": {
+        "$className": "Folder",
+        "Intro": {
+          "$className": "Model",
+          "Wide": {
+            "$className": "Part",
+            "$properties": {
+              "Anchored": true,
+              "CanCollide": false,
+              "CanTouch": false,
+              "CanQuery": false,
+              "Transparency": 1,
+              "Position": [
+                22,
+                18,
+                32
+              ],
+              "Size": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          "CloseUp": {
+            "$className": "Part",
+            "$properties": {
+              "Anchored": true,
+              "CanCollide": false,
+              "CanTouch": false,
+              "CanQuery": false,
+              "Transparency": 1,
+              "Position": [
+                8,
+                7,
+                14
+              ],
+              "Size": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          "Focus": {
+            "$className": "Part",
+            "$properties": {
+              "Anchored": true,
+              "CanCollide": false,
+              "CanTouch": false,
+              "CanQuery": false,
+              "Transparency": 1,
+              "Position": [
+                0,
+                3,
+                0
+              ],
+              "Size": [
+                1,
+                1,
+                1
+              ]
+            }
+          },
+          "$properties": {
+            "ModelStreamingMode": "Persistent"
+          }
+        }
+      }
+    }
+  }
+}
