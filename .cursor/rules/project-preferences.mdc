@@ -1,0 +1,14 @@
+---
+description: NewQuest coding style and manual Git workflow
+alwaysApply: true
+---
+
+# Project preferences
+
+- Follow https://roblox.github.io/lua-style-guide/ for all Roblox Luau code.
+- Use tabs, lines under 100 columns, double-quoted strings, and one statement per line.
+- Expand function bodies and conditional blocks across lines. Separate logical groups with one blank line.
+- Do not commit or push unless the user explicitly asks again. The user handles Git manually.
+- Target Untitled Experience, place 86817137440978. Preserve its map and do not modify BA Staging 1.
+- Do not publish Roblox places unless explicitly requested.
+- This is a single-player place. Keep gameplay systems simple; avoid multiplayer synchronization machinery.

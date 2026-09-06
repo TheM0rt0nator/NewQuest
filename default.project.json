@@ -5,6 +5,12 @@
     "ReplicatedStorage": {
       "$className": "ReplicatedStorage",
       "$path": "src/ReplicatedStorage",
+      "BeginClassroomSeating": {
+        "$className": "RemoteFunction"
+      },
+      "EndClassroomSeating": {
+        "$className": "RemoteEvent"
+      },
       "$ignoreUnknownInstances": true
     },
     "StarterPlayer": {
@@ -18,6 +24,13 @@
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
+      "$path": "src/ServerScriptService",
+      "ServerPackages": {
+        "$className": "Folder",
+        "ProfileStore": {
+          "$path": "ServerPackages/ProfileStore.luau"
+        }
+      },
       "$ignoreUnknownInstances": true
     },
     "Workspace": {

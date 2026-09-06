@@ -1,102 +1,143 @@
 # NewQuest
 
-An independent Roblox starter for the custom anniversary quest place.
+Single-player anniversary quest destination, designed to run in the same Roblox
+universe as Berry Avenue. Development target: **Untitled Experience**, place
+86817137440978.
 
-Includes the reusable cutscene runner and steps, a self-contained cinematic bars
-helper, a small CutsceneManager, and a camera-only QuestIntro example. There are
-no external packages. The scripts are installed in the existing Untitled Experience Studio place
-(place ID 86817137440978). This repository manages code and sample camera markers;
-the existing terrain, buildings and map assets remain managed in Studio.
+## Try chapter one
 
-## Open and try it
+Press **Play** in the selected Studio. At the classroom quest step, the player is
+seated at the middle-row desk before the opening shot is revealed. Movement and
+jumping are disabled during preparation and playback. Ms Taylor asks
+Maya, Leo, and Amira what they want to be: a doctor, pilot, and artist. Camera shots
+and dialogue lead to the teacher asking the player the same question.
 
-1. Switch to **Untitled Experience** in Roblox Studio.
-2. Press **Play**, wait for your character, then click **Play example cutscene**.
-3. The camera moves between two shots. Use **Skip** to cancel, or let it finish.
-   Movement, prompts, camera and field of view are restored afterward.
-4. Stop Play before editing. The preview button appears only in Studio.
+Dialogue advances automatically. Click **Continue** to reveal the line, then again
+to advance early. **Skip** finishes the introduction checkpoint. The intro starts
+automatically on joining only while the active anniversary adventure is at
+destination state 1. Later, inactive, or completed quests cannot start it, even
+through the seating remote. A retry is available only while that step is current.
+Death, failure, or other cancellation releases the seat without advancing progress.
 
-For ongoing editing, run `rojo serve` in this repository and connect the Rojo
-Studio plugin to **NewQuest** in Untitled Experience. Review the initial sync.
-The project maps only starter code and sample markers, preserving other Studio
-instances. It is not a backup of the map; save the place in Studio too.
+The player's response and the following activity are not implemented yet. NPC names
+and dialogue are editable in `src/ReplicatedStorage/Cutscenes/ClassroomIntro.lua`.
 
-The tool versions are listed in `aftman.toml`. There is no package-install step.
-A code-only build check can be run with:
+## Shared quest data
+
+`QuestService` uses Berry Avenue's installed ProfileStore 1.0.3, the same
+`PlayerData_LIVE` store, and the same `Player_<UserId>` keys. It loads the full
+profile and preserves unrelated fields and quests. ProfileStore manages session
+ownership, autosaving, and saving/releasing the profile when the player leaves.
+
+The entrance's outer `Quests.AnniversaryQuest.State` remains the adventure state
+(`Id = 2`). This place stores its chapter progress separately inside:
+
+```lua
+data.Quests.AnniversaryQuest.Destination = {
+	Version = 1,
+	State = {
+		Id = 1,
+		Progress = 0,
+		Goal = 1,
+		Description = "Listen to your classmates' dreams",
+	},
+}
+```
+
+Stages are defined in `src/ReplicatedStorage/Modules/AnniversaryQuestConfig.lua`:
+
+- `ClassroomIntro` (1): listen to the class; resume at `Arrival` and start the scene.
+- `YourFuture` (2): the teacher has asked about your ambition; resume at
+  `YourFutureArrival`, show the current objective, and do not replay the intro.
+
+Finishing or deliberately skipping the classroom intro advances Destination.State
+to 2. It does not complete the entire anniversary quest or grant a reward.
+Returning players load the checkpoint and move to that stage's resume marker.
+The same restoration runs on respawn and when the server advances to a new stage.
+
+Server gameplay code can use:
+
+```lua
+local QuestService = require(game.ServerScriptService.QuestService)
+local QuestConfig = require(game.ReplicatedStorage.Modules.AnniversaryQuestConfig)
+
+local quest = QuestService:GetQuestData(player, "AnniversaryQuest")
+local chapter = quest.Destination.State
+
+-- Report progress only after validating the corresponding gameplay event.
+QuestService:CompleteObjective(player, "AnniversaryQuest", QuestConfig.States.ClassroomIntro)
+```
+
+`GetQuestData` returns a copy. `SetState` advances only to the next configured
+destination objective. `CompleteObjective` checks the expected state, so repeated
+or late callbacks cannot advance the next stage. `StateChanged` notifies server
+stage handlers. Append future objectives to AnniversaryQuestConfig, give each one
+a stable ID and resume marker, and implement its gameplay handler. Do not renumber
+saved states. The player's ambition response and later stages are not defined yet.
+Clients cannot select arbitrary states; the only current completion report is
+validated against the active classroom seating session.
+
+Studio always uses **ProfileStore.Mock**. Tests never load or change live player
+profiles. Mock progress survives profile release/reload within that Play session
+and resets when Play stops. Live cross-place handoff still needs verification
+after the destination is placed in the final universe and published by you.
+
+## Studio assets and source
+
+The existing school, terrain, buildings, and original SpawnLocation are preserved.
+`Workspace.ClassroomIntro` contains the added NPC cast and camera markers. It uses
+Persistent streaming mode; the client also requests the classroom area before
+showing the scene. The original disabled school seats are untouched. A temporary
+server seat seats the player and is removed afterward.
+
+The six student NPCs use R15 rigs. They and the player use the looping sitting pose
+`rbxassetid://134259979568724`, configured in `ClassroomSitting.lua`. The player must
+use R15 for this animation. Their sitting track is stopped when the seating session
+ends; the students keep their pose and Ms Taylor remains standing.
+
+The map and classroom cast are managed in Studio. Save the place there. The
+repository is not a backup of the full map. `tools/BuildClassroom.lua` contains the
+reproducible initial cast/marker builder; run it only in Edit mode when
+ClassroomIntro does not already exist. Later Studio appearance edits take
+precedence over that initial builder.
+
+`rojo serve` syncs code and the old example camera markers into the selected place.
+Review its initial sync. The project preserves unknown map instances. The older
+camera-only QuestIntro example and reusable runner remain available.
+
+The reusable CutsceneManager now includes CutsceneDialogue. Scenes contain an
+ordered Steps array; custom asynchronous steps should use context:Wait/Tween/Await.
+Register temporary state using context:Set or context:Defer. Cleanup must not yield.
+
+## Formatting and checks
+
+Follow [Roblox's Luau style guide](https://roblox.github.io/lua-style-guide/).
+Project code uses tabs, expanded blocks, readable spacing, and a 100-column target.
+StyLua settings are in `.stylua.toml`; the vendored ProfileStore source is unchanged.
 
 ```powershell
+stylua --check src tools
+selene src tools
 New-Item -ItemType Directory -Force build | Out-Null
 rojo build default.project.json --output build/NewQuest.rbxlx
 ```
 
-This build does not contain your Studio map. Keep developing in the existing place.
+The build contains code and example markers, not the Studio map.
 
-## Play a scene from quest code
-
-Call from a LocalScript after the player's character is ready:
+Manual checks, during Play when no cutscene is active:
 
 ```lua
-local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local CutsceneManager = require(ReplicatedStorage.Modules.CutsceneManager)
-local QuestIntro = require(ReplicatedStorage.Cutscenes.QuestIntro)
-
-local status, reason = CutsceneManager.Play(
-    QuestIntro(workspace.CutsceneMarkers.Intro)
-)
-if status == 'Failed' then
-    warn(reason)
-end
-```
-
-`Play` yields and returns `Completed`, `Cancelled`, `Failed`, or `Busy`.
-Call `CutsceneManager.Cancel('Skipped')` to cancel; do not cancel the playback
-coroutine. Death, character replacement and camera replacement also cancel safely.
-
-Author scenes under `src/ReplicatedStorage/Cutscenes`. Each scene has an ordered
-`Steps` array. Available steps: Camera, Wait, Move, Call, Dialog, Animation and
-Sound. This starter has no dialogue screen; Dialog requires a presentation adapter
-passed to `Cutscene.new({ Adapters = { Dialog = ... } })`. Use the low-level runner
-for custom setup, or extend the manager when that UI is designed.
-
-Use `context:Wait`, `context:Tween` and `context:Await` in asynchronous custom
-steps so cancellation works. Register temporary changes with `context:Set` or
-`context:Defer`; cleanup callbacks must not yield. The runner restores temporary
-actor moves, sounds, animations, camera and other registered state after a scene.
-
-The example uses the positions of Wide, CloseUp and Focus under
-Workspace.CutsceneMarkers.Intro. Orientations are calculated to face Focus.
-Edit their initial values in default.project.json when using Rojo.
-
-## Verification
-
-Run `selene src` for lint checks. The existing runner checks are included and
-never run automatically. In a Studio Play session, use the **client** Command Bar:
-
-```lua
+-- Client Command Bar:
 require(game.ReplicatedStorage.Modules.Cutscene.Tests)()
+
+-- Server Command Bar (Studio mock profiles only):
+require(game.ServerScriptService.QuestServiceTests)()
 ```
 
-Expected output: `Cutscene tests passed`. This checks ordering, camera cleanup,
-overlap rejection, cancellation, failure recovery, callback timeout, tween
-cancellation and destruction. Also try the visual example and Skip.
+Verified: full playback, seating before reveal, locked movement/jumping, Skip, state 1-to-2 advancement,
+camera/control/dialogue cleanup, death/respawn recovery, runner regressions, invalid progress rejection,
+mock profile reload, and preservation of unrelated shared-profile data.
+Live DataStore/teleport handoff and mobile/gamepad layouts remain untested.
 
-Verified in Untitled Experience on 2026-09-06: runner checks passed, the preview
-completed and skipped through its UI, and live client probes confirmed camera,
-FOV, prompt, movement-binding and UI cleanup on completion, cancellation and
-failure. Selene and the code-only Rojo build passed. Death/respawn, camera
-replacement, mobile/gamepad input and custom dialogue/audio adapters were not
-exercised in this verification pass.
-
-## Connect the destination later
-
-Untitled Experience currently belongs to universe 10764817039, while BA Staging 1
-belongs to universe 3613283495. For the originally planned same-experience travel,
-save/publish the finished quest as a place within the intended Berry Avenue
-experience, then configure that destination place ID in Berry Avenue. This setup
-does not change the entrance destination or publish either place.
-
-This project intentionally starts without quest persistence, inventory, rewards
-or Berry Avenue services. The old QuestService's second objective is not loaded
-here. Arrival, subsequent objectives and any save/reward contract will be
-implemented in this project's own server code as the quest is designed.
-Client cutscenes do not grant rewards or authorize quest completion.
+Git commits and pushes are handled manually by the user. This work does not
+publish a Roblox place or change Berry Avenue's entrance destination.

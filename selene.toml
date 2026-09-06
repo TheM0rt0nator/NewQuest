@@ -1,4 +1,1 @@
 std = "roblox"
-
-[lints]
-multiple_statements = "allow"
