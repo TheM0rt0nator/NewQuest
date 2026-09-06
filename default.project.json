@@ -11,6 +11,12 @@
       "EndClassroomSeating": {
         "$className": "RemoteEvent"
       },
+      "BeginDoctorIntro": {
+        "$className": "RemoteFunction"
+      },
+      "EndDoctorIntro": {
+        "$className": "RemoteEvent"
+      },
       "$ignoreUnknownInstances": true
     },
     "StarterPlayer": {

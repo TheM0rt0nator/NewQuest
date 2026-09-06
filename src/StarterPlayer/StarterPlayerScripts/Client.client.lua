@@ -3,12 +3,16 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ClassroomIntro = require(ReplicatedStorage.Cutscenes.ClassroomIntro)
+local DoctorIntro = require(ReplicatedStorage.Cutscenes.DoctorIntro)
+local DoctorConfig = require(ReplicatedStorage.Modules.DoctorQuestConfig)
 local CutsceneManager = require(ReplicatedStorage.Modules.CutsceneManager)
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local beginSeating = ReplicatedStorage:WaitForChild("BeginClassroomSeating")
 local endSeating = ReplicatedStorage:WaitForChild("EndClassroomSeating")
+local beginDoctorIntro = ReplicatedStorage:WaitForChild("BeginDoctorIntro")
+local endDoctorIntro = ReplicatedStorage:WaitForChild("EndDoctorIntro")
 local busy = false
 
 local function setControlsEnabled(enabled)
@@ -87,10 +91,24 @@ retry.Position = UDim2.new(0, 24, 0.08, 98)
 
 local function updateObjective()
 	objectiveLabel.Text = "ANNIVERSARY QUEST\n" .. (player:GetAttribute("QuestObjective") or "")
+	local taskId = player:GetAttribute("DoctorTask")
+	if player:GetAttribute("QuestState") == 3 and DoctorConfig.Tasks[taskId] then
+		objectiveLabel.Text = string.format(
+			"PATIENT CARE  •  %d / 6\n%s %s",
+			player:GetAttribute("QuestProgress") or 0,
+			player:GetAttribute("DoctorBusy") and "Using"
+				or player:GetAttribute("DoctorCarrying") and "Return with"
+				or "Collect",
+			DoctorConfig.Tasks[taskId].Label
+		)
+	end
 	objectiveLabel.Visible = not busy and player:GetAttribute("QuestDataReady") == true
 end
 
 player:GetAttributeChangedSignal("QuestObjective"):Connect(updateObjective)
+for _, attribute in { "DoctorTask", "DoctorCarrying", "DoctorBusy", "QuestProgress" } do
+	player:GetAttributeChangedSignal(attribute):Connect(updateObjective)
+end
 
 local function playIntro()
 	if busy or CutsceneManager.IsPlaying() then
@@ -104,6 +122,7 @@ local function playIntro()
 	setControlsEnabled(false)
 
 	local seatingRequested = false
+	local doctorRequested = false
 	local humanoid
 	local jumpingEnabled
 	local ok, status, reason = xpcall(function()
@@ -121,10 +140,30 @@ local function playIntro()
 			assert(os.clock() < deadline, "Quest data is not ready")
 			task.wait(0.05)
 		end
-		while not character:GetAttribute("ClassroomReady") do
+		while
+			not character:GetAttribute("ClassroomReady")
+			or character:GetAttribute("QuestResumeState") ~= player:GetAttribute("QuestState")
+		do
 			checkCharacter()
 			assert(os.clock() < deadline, "The classroom is not ready")
 			task.wait(0.05)
+		end
+		if
+			player:GetAttribute("QuestState") == 2 and player:GetAttribute("DoctorQuestEligible")
+		then
+			loading.Text = "YOUR FIRST SHIFT\nDoctor"
+			retry.Text = "Retry patient introduction"
+			local doctorStage = workspace:WaitForChild("DoctorQuest", 15)
+			assert(doctorStage, "DoctorQuest is missing")
+			if workspace.StreamingEnabled then
+				player:RequestStreamAroundAsync(doctorStage.Markers.Arrival.Position, 10)
+			end
+			checkCharacter()
+			doctorRequested = beginDoctorIntro:InvokeServer()
+			assert(doctorRequested, "Could not prepare the patient introduction")
+			return CutsceneManager.Play(DoctorIntro(doctorStage, function()
+				loading.Visible = false
+			end))
 		end
 		if player:GetAttribute("ClassroomIntroEligible") ~= true then
 			return "Resumed"
@@ -178,6 +217,13 @@ local function playIntro()
 		end
 		endSeating:FireServer(outcome)
 	end
+	if doctorRequested then
+		local outcome = status == "Completed" and "Completed" or "Cancelled"
+		if status == "Cancelled" and reason == "Skipped" then
+			outcome = "Skipped"
+		end
+		endDoctorIntro:FireServer(outcome)
+	end
 	if humanoid and humanoid.Parent and jumpingEnabled ~= nil then
 		humanoid:SetStateEnabled(Enum.HumanoidStateType.Jumping, jumpingEnabled)
 	end
@@ -188,8 +234,10 @@ local function playIntro()
 	updateObjective()
 	gui:SetAttribute("LastStatus", status)
 	gui:SetAttribute("LastReason", reason)
-	retry.Visible = player:GetAttribute("ClassroomIntroEligible") == true
-		and (status == "Failed" or status == "Cancelled")
+	retry.Visible = (
+		player:GetAttribute("ClassroomIntroEligible") == true
+		or player:GetAttribute("QuestState") == 2 and player:GetAttribute("DoctorQuestEligible")
+	) and (status == "Failed" or status == "Cancelled")
 
 	if status == "Failed" then
 		warn("[ClassroomIntro]", reason)
@@ -200,6 +248,21 @@ end
 
 player:GetAttributeChangedSignal("ClassroomIntroEligible"):Connect(function()
 	if player:GetAttribute("ClassroomIntroEligible") ~= true then
+		retry.Visible = false
+	end
+end)
+
+player:GetAttributeChangedSignal("QuestState"):Connect(function()
+	if player:GetAttribute("QuestState") == 2 then
+		task.spawn(function()
+			while busy do
+				task.wait()
+			end
+			if player:GetAttribute("QuestState") == 2 then
+				playIntro()
+			end
+		end)
+	else
 		retry.Visible = false
 	end
 end)

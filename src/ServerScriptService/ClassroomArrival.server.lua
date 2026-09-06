@@ -147,7 +147,8 @@ local function placeCharacter(character)
 	end
 
 	local objective = QuestService:GetObjective(player)
-	local resumeStage = objective and workspace:FindFirstChild(objective.ResumeStage or "ClassroomIntro")
+	local resumeStage = objective
+		and workspace:FindFirstChild(objective.ResumeStage or "ClassroomIntro")
 	local marker = resumeStage and resumeStage.Markers:FindFirstChild(objective.ResumeMarker)
 	if not marker then
 		warn("No resume marker is configured for the player's quest state")

@@ -19,8 +19,34 @@ destination state 1. Later, inactive, or completed quests cannot start it, even
 through the seating remote. A retry is available only while that step is current.
 Death, failure, or other cancellation releases the seat without advancing progress.
 
-The player's response and the following activity are not implemented yet. NPC names
-and dialogue are editable in `src/ReplicatedStorage/Cutscenes/ClassroomIntro.lua`.
+The classroom leads directly into the doctor shift. NPC names and classroom
+dialogue are editable in `src/ReplicatedStorage/Cutscenes/ClassroomIntro.lua`.
+
+## Doctor shift
+
+The existing hospital bed near `(541, 20, 465)` is used for the patient. The added
+`Workspace.DoctorQuest` model contains the patient, six supply trays, care board,
+monitor display, and arrival/camera markers. Its HospitalBed ObjectValue references
+the original bed. The hospital itself is preserved.
+
+After a short patient cutscene, collect the item named on the board with its prompt,
+then return to the patient and use the treatment prompt. Medicine, shock, scalpel,
+bandage, blood bag, and injection each appear once in a shuffled order. Each
+treatment plays an eight-second arm gesture; six treatments plus collecting and
+walking are intended to take roughly one to two minutes. The current destination
+is highlighted and the held item is visible in the player's hand.
+
+The monitor beeps more slowly after each treatment. At five of six treatments
+(the first whole-task checkpoint at or above 75%), it flashes red. After the sixth,
+the monitor returns to its normal green display and beep interval. The board shows
+that the patient is stable and the doctor shift is complete.
+
+`DoctorQuestConfig.lua` defines the tasks, timings, colours, warning threshold, and
+beep asset. The treatment gesture supports both Motor6D and AnimationConstraint
+avatars using client-side Transform evaluation after the Animator, following
+[Roblox's AnimationConstraint guidance](https://create.roblox.com/docs/reference/engine/classes/AnimationConstraint).
+Pickup and treatment use [proximity prompts](https://create.roblox.com/docs/ui/proximity-prompts)
+with server checks for the current task, held item, distance, and character state.
 
 ## Shared quest data
 
@@ -47,11 +73,16 @@ data.Quests.AnniversaryQuest.Destination = {
 Stages are defined in `src/ReplicatedStorage/Modules/AnniversaryQuestConfig.lua`:
 
 - `ClassroomIntro` (1): listen to the class; resume at `Arrival` and start the scene.
-- `YourFuture` (2): the teacher has asked about your ambition; resume at
-  `YourFutureArrival`, show the current objective, and do not replay the intro.
+- `YourFuture` / `DoctorIntro` (2): retains the original saved ID and key; now
+  resumes at DoctorQuest.Arrival and introduces the patient.
+- `DoctorTasks` (3): resumes in the hospital with the saved task order, completed
+  count, and held item. An interrupted treatment must be performed again.
+- `DoctorComplete` (4): resumes at the hospital with the patient stable.
 
 Finishing or deliberately skipping the classroom intro advances Destination.State
 to 2. It does not complete the entire anniversary quest or grant a reward.
+The doctor's shuffled order and carrying flag are saved in `Destination.Doctor`;
+the completed treatment count is `Destination.State.Progress` during state 3.
 Returning players load the checkpoint and move to that stage's resume marker.
 The same restoration runs on respawn and when the server advances to a new stage.
 
@@ -73,9 +104,10 @@ destination objective. `CompleteObjective` checks the expected state, so repeate
 or late callbacks cannot advance the next stage. `StateChanged` notifies server
 stage handlers. Append future objectives to AnniversaryQuestConfig, give each one
 a stable ID and resume marker, and implement its gameplay handler. Do not renumber
-saved states. The player's ambition response and later stages are not defined yet.
-Clients cannot select arbitrary states; the only current completion report is
-validated against the active classroom seating session.
+saved states. Stages after the doctor shift are not defined yet. Completing this
+job does not complete the entire anniversary quest or award its final reward.
+Clients cannot select arbitrary states. Cutscene reports and item prompts are
+validated against the current server session and quest checkpoint.
 
 Studio always uses **ProfileStore.Mock**. Tests never load or change live player
 profiles. Mock progress survives profile release/reload within that Play session
@@ -100,6 +132,10 @@ repository is not a backup of the full map. `tools/BuildClassroom.lua` contains 
 reproducible initial cast/marker builder; run it only in Edit mode when
 ClassroomIntro does not already exist. Later Studio appearance edits take
 precedence over that initial builder.
+
+`tools/BuildDoctorRoom.lua` is the equivalent one-time builder for the doctor props.
+It refuses to replace an existing DoctorQuest model. Save the place in Studio to
+retain the installed props and any subsequent layout edits.
 
 `rojo serve` syncs code and the old example camera markers into the selected place.
 Review its initial sync. The project preserves unknown map instances. The older
@@ -137,6 +173,10 @@ require(game.ServerScriptService.QuestServiceTests)()
 Verified: full playback, seating before reveal, locked movement/jumping, Skip, state 1-to-2 advancement,
 camera/control/dialogue cleanup, death/respawn recovery, runner regressions, invalid progress rejection,
 mock profile reload, and preservation of unrelated shared-profile data.
+Doctor checks: classroom-to-hospital transition, patient intro, prompt pickup and
+treatment, six-task completion, wrong-item/distance/duplicate rejection, warning at
+5/6, normal monitor at completion, interruption/respawn with a held item, and mock
+profile reload of the shuffled order, carried item, and completed shift.
 Live DataStore/teleport handoff and mobile/gamepad layouts remain untested.
 
 Git commits and pushes are handled manually by the user. This work does not

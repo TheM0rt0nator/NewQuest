@@ -73,7 +73,10 @@ local function replicate(player)
 	player:SetAttribute("QuestStateKey", OBJECTIVES[state.Id].Key)
 	player:SetAttribute("QuestCompleted", quest.Completed == true)
 	player:SetAttribute("ClassroomIntroEligible", QuestService:IsClassroomIntroStep(player))
-	player:SetAttribute("DoctorQuestEligible", QuestService:IsActiveStep(player, state.Id) and state.Id >= 2 and state.Id <= 4)
+	player:SetAttribute(
+		"DoctorQuestEligible",
+		QuestService:IsActiveStep(player, state.Id) and state.Id >= 2 and state.Id <= 4
+	)
 	local doctor = quest.Destination.Doctor
 	player:SetAttribute("DoctorTask", doctor and doctor.Order[state.Progress + 1] or nil)
 	player:SetAttribute("DoctorCarrying", doctor and doctor.Carrying == true or false)
@@ -235,8 +238,10 @@ end
 
 -- The shuffled order and held item live in the shared profile alongside the checkpoint.
 function QuestService:PrepareDoctorRun(player)
-	if not self:IsActiveStep(player, QuestConfig.States.DoctorIntro)
-		and not self:IsActiveStep(player, QuestConfig.States.DoctorTasks) then
+	if
+		not self:IsActiveStep(player, QuestConfig.States.DoctorIntro)
+		and not self:IsActiveStep(player, QuestConfig.States.DoctorTasks)
+	then
 		return false
 	end
 	local profile = profiles[player]
@@ -278,8 +283,12 @@ function QuestService:CompleteDoctorTask(player, taskId, expectedProgress)
 	local destination = profiles[player].Data.Quests[QUEST_NAME].Destination
 	local doctor = destination.Doctor
 	local progress = destination.State.Progress
-	if not doctor or not doctor.Carrying or progress ~= expectedProgress
-		or doctor.Order[progress + 1] ~= taskId then
+	if
+		not doctor
+		or not doctor.Carrying
+		or progress ~= expectedProgress
+		or doctor.Order[progress + 1] ~= taskId
+	then
 		return false
 	end
 	doctor.Carrying = false

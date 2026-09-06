@@ -15,6 +15,9 @@ return function()
 	function player:Kick(reason)
 		error(reason)
 	end
+	function player:GetAttribute(name)
+		return attributes[name]
+	end
 
 	local mockStore = ProfileStore.New("PlayerData_LIVE", {}).Mock
 	local key = "Player_" .. player.UserId
@@ -60,7 +63,7 @@ return function()
 		)
 		assert(QuestService:GetObjective(player).Key == "YourFuture", "Wrong next stage")
 		assert(
-			QuestService:GetObjective(player).ResumeMarker == "YourFutureArrival",
+			QuestService:GetObjective(player).ResumeStage == "DoctorQuest",
 			"Wrong next-stage resume location"
 		)
 		assert(
@@ -81,6 +84,52 @@ return function()
 			QuestService:GetQuestData(player, "AnniversaryQuest").Destination.State.Id == 2,
 			"Checkpoint was not saved"
 		)
+
+		assert(QuestService:PrepareDoctorRun(player), "Doctor order was not prepared")
+		local order = QuestService:GetQuestData(player, "AnniversaryQuest").Destination.Doctor.Order
+		local seen = {}
+		for _, taskId in order do
+			assert(not seen[taskId], "Doctor task appeared twice")
+			seen[taskId] = true
+		end
+		assert(#order == 6, "Doctor task order is incomplete")
+		assert(not QuestService:PickUpDoctorItem(player, order[1]), "Pickup allowed during intro")
+		assert(
+			QuestService:CompleteObjective(player, "AnniversaryQuest", 2),
+			"Doctor intro did not finish"
+		)
+		assert(not QuestService:PickUpDoctorItem(player, order[2]), "Wrong item accepted")
+		assert(QuestService:PickUpDoctorItem(player, order[1]), "Correct item rejected")
+		assert(not QuestService:PickUpDoctorItem(player, order[1]), "Duplicate pickup accepted")
+		QuestService:RemovePlayer(player)
+		assert(QuestService:LoadPlayer(player), "Doctor checkpoint did not reopen")
+		local restored = QuestService:GetQuestData(player, "AnniversaryQuest").Destination.Doctor
+		assert(restored.Carrying and restored.Order[1] == order[1], "Held item or order was lost")
+		for index, taskId in order do
+			if index > 1 then
+				assert(QuestService:PickUpDoctorItem(player, taskId), "Next pickup failed")
+			end
+			assert(
+				not QuestService:CompleteDoctorTask(player, taskId, index),
+				"Stale progress accepted"
+			)
+			assert(
+				QuestService:CompleteDoctorTask(player, taskId, index - 1),
+				"Treatment did not save"
+			)
+			assert(
+				not QuestService:CompleteDoctorTask(player, taskId, index - 1),
+				"Duplicate treatment accepted"
+			)
+		end
+		assert(attributes.QuestState == 4, "Doctor shift did not finish")
+		assert(
+			not QuestService:PickUpDoctorItem(player, order[1]),
+			"Completed shift allowed a pickup"
+		)
+		QuestService:RemovePlayer(player)
+		assert(QuestService:LoadPlayer(player), "Completed shift did not reopen")
+		assert(attributes.QuestState == 4, "Completed shift replayed after reload")
 		QuestService:RemovePlayer(player)
 
 		local saved = mockStore:StartSessionAsync(key)
