@@ -1,5 +1,6 @@
 local DoctorQuestConfig = {
-	TaskIds = { "Medicine", "Shock", "Scalpel", "Bandage", "BloodBag", "Injection" },
+	TaskIds = { "Medicine", "Scalpel", "Bandage", "BloodBag", "Injection", "Shock" },
+	FinalTaskId = "Shock",
 	Tasks = {
 		Medicine = {
 			Label = "Medicine",
@@ -32,8 +33,7 @@ local DoctorQuestConfig = {
 			Color = Color3.fromRGB(136, 175, 232),
 		},
 	},
-	TreatmentDuration = 8,
-	WarningFraction = 0.75,
+	TreatmentDuration = 2,
 	NormalBeatInterval = 0.85,
 	BeatIntervalIncrease = 0.28,
 	BeepSoundId = "rbxassetid://172905765",

@@ -17,6 +17,16 @@
       "EndDoctorIntro": {
         "$className": "RemoteEvent"
       },
+      "ReturnToBerryAvenue": {
+        "$className": "RemoteEvent"
+      },
+      "$ignoreUnknownInstances": true
+    },
+    "StarterGui": {
+      "$className": "StarterGui",
+      "ScreenGui": {
+        "$path": "src/StarterGui/NPCChat.rbxmx"
+      },
       "$ignoreUnknownInstances": true
     },
     "StarterPlayer": {

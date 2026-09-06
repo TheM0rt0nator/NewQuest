@@ -10,6 +10,16 @@ local DoctorConfig = require(ReplicatedStorage.Modules.DoctorQuestConfig)
 local QUEST_NAME = QuestConfig.Name
 local OBJECTIVES = QuestConfig.Objectives
 
+local function nextStateId(currentState)
+	if
+		currentState == QuestConfig.States.DoctorComplete
+		and not QuestConfig.EnablePoliceClassroom
+	then
+		return QuestConfig.States.ClassroomFinale
+	end
+	return currentState + 1
+end
+
 local QuestService = {}
 local profiles = {}
 local stateChanged = Instance.new("BindableEvent")
@@ -61,6 +71,28 @@ local function prepareQuest(data)
 	assert(destination.Version == 1, "Unsupported anniversary chapter version")
 	assert(type(destination.State) == "table", "Invalid anniversary chapter state")
 	assert(OBJECTIVES[destination.State.Id], "Unknown anniversary chapter objective")
+	if
+		destination.State.Id == QuestConfig.States.PoliceClassroom
+		and not QuestConfig.EnablePoliceClassroom
+	then
+		destination.State = table.clone(OBJECTIVES[QuestConfig.States.ClassroomFinale])
+	end
+	-- Keep completed care tasks when resuming an older randomized doctor run.
+	local doctor = destination.Doctor
+	if doctor and (destination.State.Id == 2 or destination.State.Id == 3) then
+		local shockIndex = table.find(doctor.Order, DoctorConfig.FinalTaskId)
+		if shockIndex and shockIndex ~= #doctor.Order then
+			local progress = destination.State.Progress
+			local heldTask = doctor.Carrying and doctor.Order[progress + 1]
+			table.remove(doctor.Order, shockIndex)
+			table.insert(doctor.Order, DoctorConfig.FinalTaskId)
+			if shockIndex <= progress then
+				-- A previously used Shock must be performed again as the final treatment.
+				destination.State.Progress = progress - 1
+			end
+			doctor.Carrying = heldTask == doctor.Order[destination.State.Progress + 1]
+		end
+	end
 	return quest
 end
 
@@ -180,7 +212,7 @@ function QuestService:SetState(player, questName, newState)
 	if not profile or not quest or not self:IsActiveStep(player, quest.Destination.State.Id) then
 		return false
 	end
-	if not OBJECTIVES[newState] or newState ~= quest.Destination.State.Id + 1 then
+	if not OBJECTIVES[newState] or newState ~= nextStateId(quest.Destination.State.Id) then
 		return false
 	end
 
@@ -210,8 +242,9 @@ function QuestService:UpdateProgress(player, questName, newProgress)
 	end
 
 	state.Progress = newProgress
-	if newProgress == state.Goal and OBJECTIVES[state.Id + 1] then
-		return self:SetState(player, questName, state.Id + 1)
+	local nextState = nextStateId(state.Id)
+	if newProgress == state.Goal and OBJECTIVES[nextState] then
+		return self:SetState(player, questName, nextState)
 	end
 	replicate(player)
 	profile:Save()
@@ -236,6 +269,44 @@ function QuestService:RemovePlayer(player)
 	end
 end
 
+function QuestService:CompleteFinale(player)
+	if not self:IsActiveStep(player, QuestConfig.States.ClassroomFinale) then
+		return false
+	end
+	local profile = profiles[player]
+	local quest = profile.Data.Quests[QUEST_NAME]
+	quest.Destination.State = table.clone(OBJECTIVES[QuestConfig.States.QuestComplete])
+	quest.Completed = true
+	quest.Active = false
+	replicate(player)
+	stateChanged:Fire(player, QuestConfig.States.QuestComplete)
+	profile:Save()
+	return true
+end
+
+function QuestService:WaitForCompletionSave(player)
+	local profile = profiles[player]
+	if not profile then
+		return false
+	end
+	local deadline = os.clock() + 25
+	repeat
+		local saved = profile.LastSavedData.Quests
+		local quest = saved and saved[QUEST_NAME]
+		if
+			quest and quest.Completed and quest.Destination
+			and quest.Destination.State.Id == QuestConfig.States.QuestComplete
+		then
+			return true
+		end
+		if profiles[player] ~= profile or not profile:IsActive() then
+			return false
+		end
+		task.wait(0.1)
+	until os.clock() >= deadline
+	return false
+end
+
 -- The shuffled order and held item live in the shared profile alongside the checkpoint.
 function QuestService:PrepareDoctorRun(player)
 	if
@@ -249,7 +320,8 @@ function QuestService:PrepareDoctorRun(player)
 	if not destination.Doctor then
 		local order = table.clone(DoctorConfig.TaskIds)
 		local random = Random.new()
-		for index = #order, 2, -1 do
+		-- Shuffle the first five supplies, leaving Shock last for the red monitor.
+		for index = #order - 1, 2, -1 do
 			local other = random:NextInteger(1, index)
 			order[index], order[other] = order[other], order[index]
 		end

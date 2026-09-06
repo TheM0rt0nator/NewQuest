@@ -26,32 +26,6 @@ local runner = Cutscene.new({
 		)
 		context:Set(ProximityPromptService, "Enabled", false)
 
-		local gui = Instance.new("ScreenGui")
-		context:Defer(function()
-			gui:Destroy()
-		end)
-		gui.Name = "CutsceneControls"
-		gui.ResetOnSpawn = false
-		gui.DisplayOrder = 101
-		local skip = Instance.new("TextButton")
-		skip.Text = "Skip"
-		skip.TextSize = 18
-		skip.Font = Enum.Font.GothamMedium
-		skip.Size = UDim2.fromOffset(110, 42)
-		skip.Name = "Skip"
-		skip.AnchorPoint = Vector2.new(1, 0)
-		skip.Position = UDim2.new(1, -24, 0.08, 16)
-		skip.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-		skip.TextColor3 = Color3.new(1, 1, 1)
-		skip.Parent = gui
-		local clicked = skip.Activated:Connect(function()
-			context.Cancelled = true
-			context.Reason = "Skipped"
-		end)
-		context:Defer(function()
-			clicked:Disconnect()
-		end)
-		gui.Parent = context.Player.PlayerGui
 	end,
 })
 

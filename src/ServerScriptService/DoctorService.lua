@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local QuestService = require(script.Parent.QuestService)
+local ChapterPlacement = require(script.Parent.ChapterPlacement)
 local QuestConfig = require(ReplicatedStorage.Modules.AnniversaryQuestConfig)
 local Config = require(ReplicatedStorage.Modules.DoctorQuestConfig)
 
@@ -145,6 +146,7 @@ function DoctorService.BeginIntro(player)
 		return false
 	end
 	QuestService:PrepareDoctorRun(player)
+	ChapterPlacement.Release(player.Character)
 	local session = lock(player, "Intro")
 	task.delay(45, function()
 		if sessions[player] == session then

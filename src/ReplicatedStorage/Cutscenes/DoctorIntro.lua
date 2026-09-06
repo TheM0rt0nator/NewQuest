@@ -3,6 +3,7 @@ local Steps = require(game.ReplicatedStorage.Modules.Cutscene).Steps
 return function(stage, onReady)
 	return {
 		Id = "DoctorIntro",
+		ReturnToPlayer = true,
 		Markers = stage.Markers,
 		Bars = { barHeight = 0.08, animationTime = 0.3 },
 		Steps = {
@@ -16,7 +17,6 @@ return function(stage, onReady)
 					text = "Your patient is ready. Follow the care board: collect each item, then bring it back to the bed.",
 				},
 			}),
-			Steps.Wait(0.5),
 		},
 	}
 end

@@ -153,23 +153,33 @@ local function setup(context, options)
 	-- Registered first, so camera restoration happens after bars/tweens are destroyed.
 	local cameraType, subject = camera.CameraType, camera.CameraSubject
 	local cframe, focus, fov = camera.CFrame, camera.Focus, camera.FieldOfView
-	context:Defer(function()
-		camera.CameraType = cameraType
-	end)
-	context:Defer(function()
+	local function restoreCamera()
+		if context.CameraReturned then
+			return
+		end
+		context.CameraReturned = true
 		local character = context.Player.Character
-		camera.CameraSubject = (subject and subject.Parent and subject)
-			or (character and character:FindFirstChildOfClass("Humanoid"))
-	end)
-	context:Defer(function()
-		camera.CFrame = cframe
-	end)
-	context:Defer(function()
-		camera.Focus = focus
-	end)
-	context:Defer(function()
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		local root = character and character:FindFirstChild("HumanoidRootPart")
 		camera.FieldOfView = fov
-	end)
+		if context.Scene.ReturnToPlayer and humanoid and root then
+			-- Cut directly to the player at their current location, not the saved shot.
+			local target = root.Position + Vector3.new(0, 2, 0)
+			local position = root.CFrame:PointToWorldSpace(Vector3.new(0, 4, 10))
+			camera.CFrame = CFrame.lookAt(position, target)
+			camera.Focus = CFrame.new(target)
+			camera.CameraSubject = humanoid
+			camera.CameraType = Enum.CameraType.Custom
+			return
+		end
+		camera.CFrame = cframe
+		camera.Focus = focus
+		camera.CameraSubject = (subject and subject.Parent and subject)
+			or humanoid
+		camera.CameraType = cameraType
+	end
+	context.ReturnCamera = restoreCamera
+	context:Defer(restoreCamera)
 	camera.CameraType = Enum.CameraType.Scriptable
 
 	local function cancelForCharacter()
@@ -267,6 +277,9 @@ function Cutscene:Play(scene, data)
 			context:Check()
 			step(context)
 			context:Check()
+		end
+		if scene.ReturnToPlayer then
+			context.ReturnCamera()
 		end
 		if context.Bars then
 			context.Bars:Hide()

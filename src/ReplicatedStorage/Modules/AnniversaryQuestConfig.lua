@@ -3,12 +3,19 @@
 local AnniversaryQuestConfig = {
 	Name = "AnniversaryQuest",
 	AdventureStateId = 2,
+	ReturnPlaceId = 8481844229,
+	SchoolBellSoundId = "rbxassetid://138704534210583",
+	EnablePoliceClassroom = false, -- Re-enable Leo when the police chapter is ready.
 	States = {
 		ClassroomIntro = 1,
 		YourFuture = 2,
 		DoctorIntro = 2, -- Preserve the previously saved YourFuture checkpoint.
 		DoctorTasks = 3,
 		DoctorComplete = 4,
+		PoliceClassroom = 5,
+		PoliceReady = 6,
+		ClassroomFinale = 6, -- Temporary route until the other roleplay chapters exist.
+		QuestComplete = 7,
 	},
 	Objectives = {
 		{
@@ -50,6 +57,38 @@ local AnniversaryQuestConfig = {
 			Progress = 0,
 			Description = "Doctor shift complete — the patient is stable",
 			ResumeStage = "DoctorQuest",
+			ResumeMarker = "Arrival",
+		},
+		{
+			Id = 5,
+			Key = "PoliceClassroom",
+			Type = "Event",
+			Goal = 1,
+			Progress = 0,
+			Description = "Listen to Leo's dream",
+			ResumeStage = "ClassroomIntro",
+			ResumeMarker = "Arrival",
+			Cutscene = "PoliceClassroom",
+		},
+		{
+			Id = 6,
+			Key = "ClassroomFinale",
+			Type = "Event",
+			Goal = 1,
+			Progress = 0,
+			Description = "What do you want to be?",
+			ResumeStage = "ClassroomIntro",
+			ResumeMarker = "Arrival",
+			Cutscene = "ClassroomFinale",
+		},
+		{
+			Id = 7,
+			Key = "QuestComplete",
+			Type = "Event",
+			Goal = 1,
+			Progress = 1,
+			Description = "Quest complete! Class dismissed.",
+			ResumeStage = "ClassroomIntro",
 			ResumeMarker = "Arrival",
 		},
 	},

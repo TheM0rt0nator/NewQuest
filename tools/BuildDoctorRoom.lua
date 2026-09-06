@@ -76,7 +76,7 @@ return function()
 	marker(
 		markers,
 		"Arrival",
-		CFrame.lookAt(Vector3.new(533, 20.4, 467), Vector3.new(541, 20.4, 465))
+		CFrame.lookAt(Vector3.new(540.5, 20.4, 469), Vector3.new(540.5, 20.4, 465))
 	)
 	marker(markers, "Wide", CFrame.lookAt(Vector3.new(532.5, 25.5, 471), Vector3.new(541, 21, 465)))
 	marker(

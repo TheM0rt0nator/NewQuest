@@ -64,7 +64,7 @@ RunService.Heartbeat:Connect(function()
 	end
 	local progress = state == 4 and 6 or player:GetAttribute("QuestProgress") or 0
 	local stable = state == 4
-	local warning = not stable and progress / #Config.TaskIds >= Config.WarningFraction
+	local warning = state == 3 and player:GetAttribute("DoctorTask") == Config.FinalTaskId
 	local interval = Config.NormalBeatInterval
 		+ (stable and 0 or progress * Config.BeatIntervalIncrease)
 	local now = os.clock()
