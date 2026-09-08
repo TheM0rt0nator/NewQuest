@@ -17,6 +17,12 @@
       "EndDoctorIntro": {
         "$className": "RemoteEvent"
       },
+      "PoliceAction": {
+        "$className": "RemoteFunction"
+      },
+      "ReturnToBerryAvenue": {
+        "$className": "RemoteEvent"
+      },
       "$ignoreUnknownInstances": true
     },
     "StarterPlayer": {

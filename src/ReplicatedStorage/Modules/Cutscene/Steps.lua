@@ -16,9 +16,11 @@ end
 function Steps.Camera(target, duration, fieldOfView)
 	return function(context)
 		local properties = { CFrame = context:GetCFrame(target) }
+
 		if fieldOfView then
 			properties.FieldOfView = fieldOfView
 		end
+
 		if duration and duration > 0 then
 			context:Tween(
 				context.Camera,
@@ -43,6 +45,7 @@ function Steps.Move(actor, target)
 				model:PivotTo(previous)
 			end
 		end)
+
 		model:PivotTo(destination)
 	end
 end
@@ -62,6 +65,7 @@ function Steps.Animation(track, fadeTime)
 		context:Defer(function()
 			animation:Stop(fadeTime or 0.1)
 		end)
+
 		animation:Play(fadeTime or 0.1)
 	end
 end
@@ -73,6 +77,7 @@ function Steps.Sound(sound)
 		context:Defer(function()
 			clone:Destroy()
 		end)
+
 		clone.Parent = original.Parent
 		clone:Play()
 	end

@@ -8,6 +8,7 @@ return function(markers)
 			return CFrame.lookAt(markers[name].Position, markers.Focus.Position)
 		end
 	end
+
 	return {
 		Id = "QuestIntro",
 		Markers = markers,
@@ -17,6 +18,7 @@ return function(markers)
 			context:GetCFrame("CloseUp")
 			context:GetCFrame("Focus")
 		end,
+
 		Steps = {
 			Steps.Camera(shot("Wide"), 0, 65),
 			Steps.Wait(1),

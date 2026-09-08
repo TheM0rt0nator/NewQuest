@@ -42,6 +42,7 @@ end
 
 local function build()
 	assert(not workspace:FindFirstChild(STAGE_NAME), "ClassroomIntro already exists")
+
 	local seats = workspace.HighSchool.Interactables.Seats.History
 	local description = Instance.new("HumanoidDescription")
 	local template =
@@ -96,9 +97,11 @@ local function build()
 	for _, student in cast do
 		local rig = (student.seat and studentTemplate or template):Clone()
 		rig.Name = student.name
+
 		local humanoid = rig.Humanoid
 		humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 		humanoid.AutoRotate = false
+
 		local root = rig.HumanoidRootPart
 		rig.PrimaryPart = root
 		root.Anchored = true
@@ -122,6 +125,7 @@ local function build()
 		colors.RightLegColor3 = colors.LeftLegColor3
 
 		local torso = rig:FindFirstChild("UpperTorso") or rig.Torso
+
 		if student.seat then
 			rig:SetAttribute("ClassroomSeat", student.seat)
 			rig:PivotTo(seats[student.seat].CFrame * CFrame.new(0, -0.2, 0))
@@ -144,6 +148,7 @@ local function build()
 			Color3.fromRGB(188, 151, 75)
 		)
 		detail(rig.Head, "Hair", Vector3.new(2.02, 0.5, 1.05), CFrame.new(0, 0.48, 0), student.hair)
+
 		if student.name == "Maya" or student.name == "Sofia" or not student.seat then
 			detail(
 				rig.Head,
@@ -153,11 +158,13 @@ local function build()
 				student.hair
 			)
 		end
+
 		rig.Parent = actors
 	end
 
 	template:Destroy()
 	studentTemplate:Destroy()
+
 	local markers = Instance.new("Folder")
 	markers.Name = "Markers"
 	markers.Parent = stage
@@ -200,6 +207,7 @@ local function build()
 	)
 
 	stage.Parent = workspace
+
 	return stage
 end
 

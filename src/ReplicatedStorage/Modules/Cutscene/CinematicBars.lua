@@ -7,18 +7,23 @@ CinematicBars.__index = CinematicBars
 
 function CinematicBars.new(options)
 	local config = { barHeight = 0.12, animationTime = 0.4 }
+
 	for key, value in pairs(options or {}) do
 		config[key] = value
 	end
+
 	assert(config.barHeight >= 0 and config.barHeight <= 0.5, "Invalid bar height")
 	assert(config.animationTime >= 0 and config.animationTime < math.huge, "Invalid bar duration")
+
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "CinematicBars"
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 100
 	gui.ScreenInsets = Enum.ScreenInsets.None
+
 	local self = setmetatable({ config = config, Gui = gui, Tweens = {} }, CinematicBars)
+
 	for _, name in { "Top", "Bottom" } do
 		local bar = Instance.new("Frame")
 		bar.Name = name
@@ -29,6 +34,7 @@ function CinematicBars.new(options)
 		bar.Parent = gui
 		self[name] = bar
 	end
+
 	gui.Parent =
 		assert(Players.LocalPlayer:FindFirstChildOfClass("PlayerGui"), "PlayerGui unavailable")
 	return self
@@ -39,7 +45,9 @@ function CinematicBars:_Animate(top, bottom)
 		tween:Cancel()
 		tween:Destroy()
 	end
+
 	table.clear(self.Tweens)
+
 	for bar, position in { [self.Top] = top, [self.Bottom] = bottom } do
 		local tween = TweenService:Create(
 			bar,
@@ -68,6 +76,7 @@ function CinematicBars:Destroy()
 		tween:Cancel()
 		tween:Destroy()
 	end
+
 	table.clear(self.Tweens)
 	self.Gui:Destroy()
 end

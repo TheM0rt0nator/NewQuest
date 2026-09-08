@@ -7,14 +7,18 @@ local QuestService = require(script.Parent.QuestService)
 
 return function()
 	assert(RunService:IsStudio(), "Quest tests may only run in Studio")
+
 	local attributes = {}
 	local player = { UserId = 987654321, Parent = Players }
+
 	function player:SetAttribute(name, value)
 		attributes[name] = value
 	end
+
 	function player:Kick(reason)
 		error(reason)
 	end
+
 	function player:GetAttribute(name)
 		return attributes[name]
 	end
@@ -34,6 +38,7 @@ return function()
 
 	local ok, reason = xpcall(function()
 		assert(QuestService:LoadPlayer(player), "Could not load mock profile")
+
 		local quest = QuestService:GetQuestData(player, "AnniversaryQuest")
 		assert(quest.State.Id == 2, "Arrival did not retain Berry Avenue's adventure state")
 		assert(quest.Destination.State.Id == 1, "New chapter did not start at its first objective")
@@ -86,12 +91,15 @@ return function()
 		)
 
 		assert(QuestService:PrepareDoctorRun(player), "Doctor order was not prepared")
+
 		local order = QuestService:GetQuestData(player, "AnniversaryQuest").Destination.Doctor.Order
 		local seen = {}
+
 		for _, taskId in order do
 			assert(not seen[taskId], "Doctor task appeared twice")
 			seen[taskId] = true
 		end
+
 		assert(#order == 6, "Doctor task order is incomplete")
 		assert(not QuestService:PickUpDoctorItem(player, order[1]), "Pickup allowed during intro")
 		assert(
@@ -103,12 +111,15 @@ return function()
 		assert(not QuestService:PickUpDoctorItem(player, order[1]), "Duplicate pickup accepted")
 		QuestService:RemovePlayer(player)
 		assert(QuestService:LoadPlayer(player), "Doctor checkpoint did not reopen")
+
 		local restored = QuestService:GetQuestData(player, "AnniversaryQuest").Destination.Doctor
 		assert(restored.Carrying and restored.Order[1] == order[1], "Held item or order was lost")
+
 		for index, taskId in order do
 			if index > 1 then
 				assert(QuestService:PickUpDoctorItem(player, taskId), "Next pickup failed")
 			end
+
 			assert(
 				not QuestService:CompleteDoctorTask(player, taskId, index),
 				"Stale progress accepted"
@@ -122,6 +133,7 @@ return function()
 				"Duplicate treatment accepted"
 			)
 		end
+
 		assert(attributes.QuestState == 4, "Doctor shift did not finish")
 		assert(
 			not QuestService:PickUpDoctorItem(player, order[1]),
@@ -130,10 +142,63 @@ return function()
 		QuestService:RemovePlayer(player)
 		assert(QuestService:LoadPlayer(player), "Completed shift did not reopen")
 		assert(attributes.QuestState == 4, "Completed shift replayed after reload")
+		assert(QuestService:CompleteObjective(player, "AnniversaryQuest", 4), "Leo did not unlock")
+		assert(attributes.QuestState == 5, "Leo's existing checkpoint changed")
+		assert(
+			QuestService:CompleteObjective(player, "AnniversaryQuest", 5),
+			"Police job did not unlock"
+		)
+		assert(attributes.QuestState == 8, "Police job collided with existing finale IDs")
+		assert(
+			not QuestService:ConfiscatePoliceItem(player, "Phone"),
+			"Search allowed during entrance"
+		)
+		assert(
+			QuestService:CompleteObjective(player, "AnniversaryQuest", 8),
+			"Police entrance failed"
+		)
+		assert(not QuestService:ConfiscatePoliceItem(player, "Unknown"), "Unknown item accepted")
+		assert(QuestService:ConfiscatePoliceItem(player, "Phone"), "Item confiscation failed")
+		assert(not QuestService:ConfiscatePoliceItem(player, "Phone"), "Duplicate item accepted")
+		QuestService:RemovePlayer(player)
+		assert(QuestService:LoadPlayer(player), "Police checkpoint did not reload")
+		assert(
+			attributes.QuestState == 9 and attributes.QuestProgress == 1,
+			"Search progress was lost"
+		)
+		assert(attributes.PoliceConfiscated_Phone, "Confiscated item returned")
+
+		for _, id in { "Wallet", "Keys", "Lockpick", "Radio", "Watch" } do
+			assert(QuestService:ConfiscatePoliceItem(player, id), "Remaining search item failed")
+		end
+
+		assert(attributes.QuestState == 10, "Fingerprints did not unlock")
+
+		for state = 10, 14 do
+			assert(
+				QuestService:CompleteObjective(player, "AnniversaryQuest", state),
+				"Booking stage failed"
+			)
+			assert(
+				not QuestService:CompleteObjective(player, "AnniversaryQuest", state),
+				"Stale booking action accepted"
+			)
+			QuestService:RemovePlayer(player)
+			assert(QuestService:LoadPlayer(player), "Booking checkpoint did not reload")
+			assert(attributes.QuestState == state + 1, "Booking checkpoint was lost")
+		end
+
+		assert(not attributes.QuestCompleted, "Police job completed the entire quest")
+		assert(
+			QuestService:CompleteObjective(player, "AnniversaryQuest", 15),
+			"Finale did not unlock"
+		)
+		assert(attributes.QuestState == 6, "Original finale checkpoint was changed")
 		QuestService:RemovePlayer(player)
 
 		local saved = mockStore:StartSessionAsync(key)
 		assert(saved, "Could not verify mock profile")
+
 		local preserved = saved.Data.Wallet.Coins == 321 and saved.Data.Quests.RoseQuest.Completed
 		saved:EndSession()
 		assert(preserved, "Unrelated Berry Avenue profile data changed")

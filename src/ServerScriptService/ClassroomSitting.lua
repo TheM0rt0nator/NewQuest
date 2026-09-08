@@ -8,7 +8,9 @@ animation.AnimationId = ANIMATION_ID
 
 function ClassroomSitting.Play(humanoid)
 	assert(humanoid.RigType == Enum.HumanoidRigType.R15, "Classroom sitting requires an R15 rig")
+
 	local animator = humanoid:FindFirstChildOfClass("Animator")
+
 	if not animator then
 		animator = Instance.new("Animator")
 		animator.Parent = humanoid
@@ -19,6 +21,7 @@ function ClassroomSitting.Play(humanoid)
 	track.Looped = true
 	track.Priority = Enum.AnimationPriority.Action
 	track:Play(0.15)
+
 	return track
 end
 

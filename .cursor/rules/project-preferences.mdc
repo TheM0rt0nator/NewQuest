@@ -8,7 +8,10 @@ alwaysApply: true
 - Follow https://roblox.github.io/lua-style-guide/ for all Roblox Luau code.
 - Use tabs, lines under 100 columns, double-quoted strings, and one statement per line.
 - Expand function bodies and conditional blocks across lines. Separate logical groups with one blank line.
+- Leave a blank line after completed guards, loops, functions, and callbacks before the next statement. Keep nested closing lines (`end`, `end)`, `}`, etc.) together.
+- Separate declarations, UI object setup, and other logical sections with blank lines. Preserve this spacing when formatting; do not rely on indentation alone for readability.
 - Do not commit or push unless the user explicitly asks again. The user handles Git manually.
-- Target Untitled Experience, place 86817137440978. Preserve its map and do not modify BA Staging 1.
+- Target the connected Anniversary Quest place, 101522826150554 (formerly Untitled Experience). Preserve its map and do not modify BA Staging 1.
 - Do not publish Roblox places unless explicitly requested.
 - This is a single-player place. Keep gameplay systems simple; avoid multiplayer synchronization machinery.
+- Connect recurring quest effects only while their stage or interaction is active. Disconnect them on exit, death, or character removal, and prevent duplicate connections on resume. Prefer change events over frame polling for UI and readiness.

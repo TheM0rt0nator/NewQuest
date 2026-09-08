@@ -1,12 +1,15 @@
 -- Run manually on the CLIENT in a Studio play test; never runs automatically.
 return function()
 	local Cutscene = require(script.Parent)
+
 	local Steps = Cutscene.Steps
 	local camera = workspace.CurrentCamera
 	local originalType, originalFOV = camera.CameraType, camera.FieldOfView
+
 	local function scene(steps)
 		return { Bars = false, Steps = steps }
 	end
+
 	local function restored(runner)
 		assert(not runner:IsPlaying(), "Playing lock was not released")
 		assert(camera.CameraType == originalType, "Camera type was not restored")
@@ -20,11 +23,14 @@ return function()
 			context:Defer(function()
 				table.insert(order, "cleanup1")
 			end)
+
 			context:Defer(function()
 				table.insert(order, "cleanup2")
 			end)
+
 			table.insert(order, "step1")
 		end),
+
 		Steps.Camera(CFrame.new(0, 10, 0), 0, 45),
 		Steps.Wait(0.02),
 		Steps.Call(function()
@@ -47,6 +53,7 @@ return function()
 			)
 			runner:Cancel("Test cancellation")
 		end),
+
 		Steps.Call(function()
 			error("Must not run after cancellation")
 		end),
@@ -71,6 +78,7 @@ return function()
 		Steps.Call(function(context)
 			context:Await(function(done)
 				callback = done
+
 				return function()
 					stopped = stopped + 1
 				end
@@ -88,6 +96,7 @@ return function()
 			context:Defer(function()
 				cleanupRan = true
 			end)
+
 			context:Defer(function()
 				error("Expected cleanup failure")
 			end)
@@ -102,6 +111,7 @@ return function()
 			context:Defer(function()
 				setupRestored = true
 			end)
+
 			error("Expected setup failure")
 		end,
 	})
@@ -115,8 +125,10 @@ return function()
 	part.Anchored = true
 	part.Parent = model
 	model.Parent = workspace
+
 	local previousPivot = model:GetPivot()
 	status = runner:Play(scene({ Steps.Move(model, CFrame.new(20, 30, 40)) }))
+
 	local actorRestored = model:GetPivot() == previousPivot
 	model:Destroy()
 	assert(status == "Completed" and actorRestored, "Actor position was not restored")
@@ -128,6 +140,7 @@ return function()
 				runner:Cancel("Cancel tween")
 			end)
 		end),
+
 		Steps.Camera(CFrame.new(0, 50, 0), 2, 40),
 		Steps.Call(function()
 			tweenFinished = true
@@ -141,6 +154,7 @@ return function()
 			task.delay(0.02, function()
 				runner:Destroy()
 			end)
+
 			context:Wait(2)
 		end),
 	}))
