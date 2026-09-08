@@ -155,6 +155,14 @@ function PoliceEvidence.Install(stage)
 		end
 	end
 
+	-- Normalize existing evidence as well as newly created items.
+	for _, object in folder:GetDescendants() do
+		if object:IsA("BasePart") then
+			object.Massless = true
+			object.CanCollide = false
+		end
+	end
+
 	return folder
 end
 

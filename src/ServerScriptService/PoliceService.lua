@@ -226,7 +226,7 @@ local function walk(model, marker, valid, via)
 	humanoid.WalkSpeed = Config.WalkSpeed
 
 	local animation = Instance.new("Animation")
-	animation.AnimationId = "rbxassetid://507777826"
+	animation.AnimationId = "rbxassetid://913402848"
 
 	local animator = humanoid:FindFirstChildOfClass("Animator")
 
@@ -238,16 +238,14 @@ local function walk(model, marker, valid, via)
 	local track = animator:LoadAnimation(animation)
 	track.Priority = Enum.AnimationPriority.Movement
 	track.Looped = true
-	track:Play(0.2)
+	track:Play(0.2, 1, Config.WalkSpeed / 8)
 
 	local ok, reason = xpcall(function()
 		for index, point in points do
 			assert(valid() and humanoid.Health > 0, "Walk cancelled")
 
 			local destination = point.Position
-			local distance = ((root.Position - destination) * Vector3.new(1, 0, 1)).Magnitude
-			local deadline = os.clock() + math.max(12, distance / Config.WalkSpeed * 3 + 5)
-			local refreshed = os.clock()
+			local deadline = os.clock() + 8
 			humanoid:MoveTo(destination)
 
 			-- Change direction before stopping at a corridor corner.
@@ -257,12 +255,6 @@ local function walk(model, marker, valid, via)
 				assert(valid() and humanoid.Health > 0, "Walk cancelled")
 				assert(os.clock() < deadline, "Could not reach " .. point.Name)
 
-				-- MoveTo expires after eight seconds; renew long walks without stopping.
-				if os.clock() - refreshed >= 6 then
-					humanoid:MoveTo(destination)
-					refreshed = os.clock()
-				end
-
 				RunService.Heartbeat:Wait()
 			end
 		end
@@ -271,7 +263,10 @@ local function walk(model, marker, valid, via)
 	track:Stop(0.2)
 	track:Destroy()
 	animation:Destroy()
-	humanoid:MoveTo(root.Position)
+	humanoid:Move(Vector3.zero)
+	humanoid.WalkSpeed = 0
+	root.AssemblyLinearVelocity = Vector3.zero
+	root.AssemblyAngularVelocity = Vector3.zero
 
 	if ok and valid() then
 		-- Turn in place at the destination; never snap the NPC's position.
@@ -297,7 +292,7 @@ local function route(player, restore)
 
 	if not markerName or not active(player, state) then
 		release(player)
-		stage.Suspect.Humanoid:MoveTo(stage.Suspect.HumanoidRootPart.Position)
+		stage.Suspect.Humanoid:Move(Vector3.zero)
 		stage.Suspect.HumanoidRootPart.Anchored = true
 		refresh(player)
 
@@ -563,6 +558,11 @@ function PoliceService.Start()
 			if part:IsA("BasePart") then
 				part.CanCollide = false
 				part.CanTouch = false
+
+				if part.Parent ~= actor then
+					part.Massless = true
+				end
+
 				table.insert(actorParts, part)
 			end
 		end

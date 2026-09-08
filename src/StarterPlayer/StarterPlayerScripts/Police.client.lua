@@ -133,11 +133,25 @@ local function intro()
 	end
 
 	local started = false
+	local animate
+	local animateEnabled
 	local dream
 	controls(false)
 
 	local ok, status, reason = xpcall(function()
 		local character = player.Character
+		animate = character:FindFirstChild("Animate")
+
+		if animate then
+			animateEnabled = animate.Enabled
+			animate.Enabled = false
+		end
+
+		-- The entrance owns locomotion until the server finishes the walk.
+		for _, track in character.Humanoid.Animator:GetPlayingAnimationTracks() do
+			track:Stop(0.2)
+		end
+
 		dream = DreamTransition.Take(player.PlayerGui)
 		dream:Cover(function()
 			assert(
@@ -167,6 +181,11 @@ local function intro()
 
 				Cutscene.Steps.Call(function()
 					local walked, problem = invoke("Enter")
+
+					if animate and animate.Parent then
+						animate.Enabled = animateEnabled
+					end
+
 					assert(walked, problem or "The entrance walk did not finish")
 				end),
 
@@ -182,6 +201,10 @@ local function intro()
 
 	if dream then
 		dream:Destroy()
+	end
+
+	if animate and animate.Parent then
+		animate.Enabled = animateEnabled
 	end
 
 	if started then
