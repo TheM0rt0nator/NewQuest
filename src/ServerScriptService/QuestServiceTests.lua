@@ -193,6 +193,23 @@ return function()
 			QuestService:CompleteObjective(player, "AnniversaryQuest", 15),
 			"Finale did not unlock"
 		)
+		assert(attributes.QuestState == 16, "Flight chapter did not unlock")
+
+		for state = 16, 21 do
+			if state == 20 then
+				assert(QuestService:UpdateProgress(player, "AnniversaryQuest", 2))
+				QuestService:RemovePlayer(player)
+				assert(QuestService:LoadPlayer(player))
+				assert(attributes.QuestProgress == 2, "Delivered meals were lost on resume")
+			end
+
+			assert(QuestService:CompleteObjective(player, "AnniversaryQuest", state))
+			assert(not QuestService:CompleteObjective(player, "AnniversaryQuest", state))
+			QuestService:RemovePlayer(player)
+			assert(QuestService:LoadPlayer(player), "Flight checkpoint did not reload")
+			assert(attributes.QuestState == (state == 21 and 6 or state + 1))
+		end
+
 		assert(attributes.QuestState == 6, "Original finale checkpoint was changed")
 		QuestService:RemovePlayer(player)
 

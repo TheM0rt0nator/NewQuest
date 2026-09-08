@@ -247,7 +247,7 @@ local function departure()
 	local ok, reason = xpcall(function()
 		local ready, problem = invoke("BeginDeparture")
 		assert(ready, problem)
-		hint.Text = "LEO\nGreat work! The booking is complete."
+		hint.Text = "LEO\nGreat work! Your next shift is aboard a Berry Avenue flight."
 		hint.Visible = true
 
 		local deadline = os.clock() + Config.DepartureDelay
@@ -261,7 +261,7 @@ local function departure()
 		DreamTransition.HandOff(dream)
 
 		local finished, failure = invoke("FinishDeparture")
-		assert(finished, failure or "Could not return to the classroom")
+		assert(finished, failure or "Could not begin your flight")
 		dream = nil
 	end, debug.traceback)
 
@@ -275,7 +275,7 @@ local function departure()
 
 	if not ok then
 		showError(reason)
-		retry.Text = "Return to the classroom"
+		retry.Text = "Continue to your flight"
 		retry.Visible = player:GetAttribute("QuestState") == 15
 	end
 end
@@ -297,6 +297,14 @@ local function panel(state)
 	controls(false)
 
 	local hiddenParts = {}
+	local hiddenLabels = {}
+
+	for _, object in stage:GetDescendants() do
+		if object:IsA("BillboardGui") then
+			hiddenLabels[object] = object.Enabled
+			object.Enabled = false
+		end
+	end
 
 	for _, object in player.Character:GetDescendants() do
 		if object:IsA("BasePart") then
@@ -332,7 +340,7 @@ local function panel(state)
 	text(root, "Title", title, UDim2.fromScale(0.3, 0.07), UDim2.fromScale(0.4, 0.07))
 
 	local progress =
-		text(root, "Progress", "", UDim2.fromScale(0.36, 0.15), UDim2.fromScale(0.28, 0.045))
+		text(root, "Progress", "", UDim2.fromScale(0.36, 0.15), UDim2.fromScale(0.28, 0.065))
 	progress.BackgroundColor3 = QuestUI.Accent
 
 	local function updateProgress()
@@ -379,6 +387,12 @@ local function panel(state)
 
 		root:Destroy()
 
+		for object, enabled in hiddenLabels do
+			if object.Parent then
+				object.Enabled = enabled
+			end
+		end
+
 		for object, transparency in hiddenParts do
 			if object.Parent then
 				object.LocalTransparencyModifier = transparency
@@ -400,7 +414,7 @@ local function panel(state)
 	end
 
 	local close =
-		button(root, "Close", "Close", UDim2.fromScale(0.76, 0.07), UDim2.fromScale(0.12, 0.06))
+		button(root, "Close", "Close", UDim2.fromScale(0.76, 0.07), UDim2.fromScale(0.12, 0.095))
 	table.insert(
 		connections,
 		close.Activated:Connect(function()

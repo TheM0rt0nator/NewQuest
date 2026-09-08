@@ -121,7 +121,7 @@ local function updateObjective()
 	local state = player:GetAttribute("QuestState") or 0
 	objectiveLabel.Visible = not busy
 		and player:GetAttribute("QuestDataReady") == true
-		and not (state >= 8 and state <= 15)
+		and not (state >= 8 and state <= 21)
 end
 
 player:GetAttributeChangedSignal("QuestObjective"):Connect(updateObjective)

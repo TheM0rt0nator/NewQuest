@@ -15,6 +15,8 @@ local function nextStateId(currentState)
 	if currentState == QuestConfig.States.PoliceClassroom then
 		return QuestConfig.States.PoliceIntro
 	elseif currentState == QuestConfig.States.PoliceComplete then
+		return QuestConfig.States.FlightIntro
+	elseif currentState == QuestConfig.States.FlightComplete then
 		return QuestConfig.States.ClassroomFinale
 	end
 
@@ -208,6 +210,17 @@ function QuestService:LoadPlayer(player)
 	then
 		profile.Data.Quests[QUEST_NAME].Destination.State =
 			table.clone(OBJECTIVES[QuestConfig.States.PoliceIntro])
+	end
+
+	if
+		ok
+		and RunService:IsStudio()
+		and workspace:GetAttribute("StudioFlightTest") == true
+		and typeof(player) == "Instance"
+		and profile.Data.Quests[QUEST_NAME].Destination.State.Id == 1
+	then
+		profile.Data.Quests[QUEST_NAME].Destination.State =
+			table.clone(OBJECTIVES[QuestConfig.States.FlightIntro])
 	end
 
 	if not ok or player.Parent ~= Players then
