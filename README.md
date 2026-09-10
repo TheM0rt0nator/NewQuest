@@ -11,6 +11,9 @@ seated at the middle-row desk before the opening shot is revealed. Movement and
 jumping are disabled during preparation and playback. Ms Taylor asks
 Maya what she wants to be, then introduces the doctor chapter. After the doctor
 shift, the classroom resumes with Leo's ambition to become a police officer.
+After police booking, the class resumes again: Ms Taylor asks Amira about her
+future, and Amira says she wants to be an air hostess. Dream transitions cover
+the return to the classroom and the departure into the cabin crew shift.
 
 Dialogue advances automatically. Click **Continue** to reveal the line, then again
 to advance early. **Skip** finishes the introduction checkpoint. The intro starts
@@ -58,7 +61,7 @@ radio, and watch. Click or touch a prop and drag it clear of the body to confisc
 it. Short drags return the prop. Each confiscation saves immediately, so collected
 props remain hidden when the search resumes. Scan and photo use buttons. The cell
 requires separate open, escort, and close interactions before returning to the
-existing classroom finale.
+classroom for Amira's air hostess scene.
 
 Walking uses `Humanoid:MoveTo()` through editable corridor markers, with one
 continuous animation per route. There is no runtime pathfinding or position
@@ -126,10 +129,12 @@ Stages are defined in `src/ReplicatedStorage/Modules/AnniversaryQuestConfig.lua`
 - `PoliceFingerprints` (10) and `PoliceMugshot` (11): resume at their stations.
 - `PoliceOpenCell` (12), `PoliceEscortCell` (13), and `PoliceCloseCell` (14): restore
   both the suspect's checkpoint and the appropriate door position.
-- `PoliceComplete` (15): returns to classroom finale (6).
+- `PoliceComplete` (15): returns to Amira's classroom scene (22).
+- `FlightClassroom` (22): resumes seated for Amira's dream, then starts FlightIntro (16).
+- `FlightIntro` through `FlightComplete` (16–21): cabin crew shift, then classroom finale (6).
 
-The sequence is 1–5 → 8–15 → 6–7. New police IDs are appended so older saved
-classroom/finale checkpoints keep their original meaning.
+The sequence is 1–5 → 8–15 → 22 → 16–21 → 6–7. New IDs are appended so older
+saved checkpoints keep their original meaning.
 
 Finishing or deliberately skipping the classroom intro advances Destination.State
 to 2. It does not complete the entire anniversary quest or grant a reward.

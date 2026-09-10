@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ClassroomIntro = require(ReplicatedStorage.Cutscenes.ClassroomIntro)
 local ClassroomFinale = require(ReplicatedStorage.Cutscenes.ClassroomFinale)
 local DoctorIntro = require(ReplicatedStorage.Cutscenes.DoctorIntro)
+local FlightClassroom = require(ReplicatedStorage.Cutscenes.FlightClassroom)
 local PoliceClassroom = require(ReplicatedStorage.Cutscenes.PoliceClassroom)
 local DoctorConfig = require(ReplicatedStorage.Modules.DoctorQuestConfig)
 local QuestConfig = require(ReplicatedStorage.Modules.AnniversaryQuestConfig)
@@ -23,6 +24,7 @@ local busy = false
 local introCharacter
 local doctorIntroFinishedCharacter
 local policeIntroFinishedCharacter
+local flightClassroomFinishedCharacter
 local finaleFinishedCharacter
 
 local function setControlsEnabled(enabled)
@@ -148,6 +150,8 @@ local function playIntro()
 		and (
 			startingState == 2 and doctorIntroFinishedCharacter == player.Character
 			or (startingState == 4 or startingState == 5) and policeIntroFinishedCharacter == player.Character
+			or startingState == QuestConfig.States.FlightClassroom
+				and flightClassroomFinishedCharacter == player.Character
 			or startingState == 6 and finaleFinishedCharacter == player.Character
 		)
 	then
@@ -162,6 +166,7 @@ local function playIntro()
 	local seatingRequested = false
 	local doctorRequested = false
 	local policeRequested = false
+	local flightRequested = false
 	local finaleRequested = false
 	local dream
 	local humanoid
@@ -277,10 +282,12 @@ local function playIntro()
 
 		local returningToClassroom = questState == 4
 		policeRequested = QuestConfig.EnablePoliceClassroom and (questState == 4 or questState == 5)
+		flightRequested = questState == QuestConfig.States.FlightClassroom
 		finaleRequested = questState == 6
 			or returningToClassroom and not QuestConfig.EnablePoliceClassroom
 		if
 			not policeRequested
+			and not flightRequested
 			and not finaleRequested
 			and player:GetAttribute("ClassroomIntroEligible") ~= true
 		then
@@ -304,6 +311,11 @@ local function playIntro()
 
 		if finaleRequested then
 			retry.Text = "Retry class dismissal"
+			coverDream()
+		end
+
+		if flightRequested then
+			retry.Text = "Retry Amira's classroom scene"
 			coverDream()
 		end
 
@@ -354,9 +366,10 @@ local function playIntro()
 			)
 		end
 
-		if policeRequested then
-			local policeStatus, policeReason = CutsceneManager.Play(
-				PoliceClassroom(stage, function(context)
+		if policeRequested or flightRequested then
+			local classroomScene = flightRequested and FlightClassroom or PoliceClassroom
+			local classroomStatus, classroomReason = CutsceneManager.Play(
+				classroomScene(stage, function(context)
 					dream:Reveal(function()
 						context:Check()
 					end)
@@ -372,11 +385,11 @@ local function playIntro()
 			)
 
 			if
-				policeStatus == "Completed"
-				or policeStatus == "Cancelled" and policeReason == "Skipped"
+				classroomStatus == "Completed"
+				or classroomStatus == "Cancelled" and classroomReason == "Skipped"
 			then
 				-- A skip can interrupt the cover animation before it becomes opaque.
-				if dream and policeStatus == "Cancelled" then
+				if dream and classroomStatus == "Cancelled" then
 					dream:Destroy()
 					dream = nil
 				end
@@ -386,7 +399,7 @@ local function playIntro()
 				dream = nil
 			end
 
-			return policeStatus, policeReason
+			return classroomStatus, classroomReason
 		end
 
 		local classroomStatus, classroomReason = CutsceneManager.Play(
@@ -450,6 +463,10 @@ local function playIntro()
 			policeIntroFinishedCharacter = introCharacter
 		end
 
+		if flightRequested and (outcome == "Completed" or outcome == "Skipped") then
+			flightClassroomFinishedCharacter = introCharacter
+		end
+
 		if finaleRequested and (outcome == "Completed" or outcome == "Skipped") then
 			finaleFinishedCharacter = introCharacter
 		end
@@ -486,6 +503,7 @@ local function playIntro()
 		or player:GetAttribute("QuestState") == 4
 		or player:GetAttribute("QuestState") == 5
 		or player:GetAttribute("QuestState") == 6
+		or player:GetAttribute("QuestState") == QuestConfig.States.FlightClassroom
 	) and (status == "Failed" or status == "Cancelled")
 
 	if status == "Failed" then
@@ -504,7 +522,16 @@ end)
 player:GetAttributeChangedSignal("QuestState"):Connect(function()
 	local state = player:GetAttribute("QuestState")
 
-	if (state == 2 or state == 4 or state == 5 or state == 6) and not busy then
+	if
+		(
+			state == 2
+			or state == 4
+			or state == 5
+			or state == 6
+			or state == QuestConfig.States.FlightClassroom
+		)
+		and not busy
+	then
 		task.spawn(function()
 			while busy do
 				task.wait()

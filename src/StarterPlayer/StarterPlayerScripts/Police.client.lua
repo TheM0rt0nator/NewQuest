@@ -247,7 +247,7 @@ local function departure()
 	local ok, reason = xpcall(function()
 		local ready, problem = invoke("BeginDeparture")
 		assert(ready, problem)
-		hint.Text = "LEO\nGreat work! Your next shift is aboard a Berry Avenue flight."
+		hint.Text = "LEO\nGreat work! The booking is complete. You've helped keep everyone safe."
 		hint.Visible = true
 
 		local deadline = os.clock() + Config.DepartureDelay
@@ -261,7 +261,7 @@ local function departure()
 		DreamTransition.HandOff(dream)
 
 		local finished, failure = invoke("FinishDeparture")
-		assert(finished, failure or "Could not begin your flight")
+		assert(finished, failure or "Could not return to the classroom")
 		dream = nil
 	end, debug.traceback)
 
@@ -275,7 +275,7 @@ local function departure()
 
 	if not ok then
 		showError(reason)
-		retry.Text = "Continue to your flight"
+		retry.Text = "Return to the classroom"
 		retry.Visible = player:GetAttribute("QuestState") == 15
 	end
 end
@@ -565,6 +565,15 @@ local poseCharacter
 local diedConnection
 local childConnection
 
+local cuffPose = {
+	RightShoulder = CFrame.Angles(math.rad(55), 0, math.rad(-30)),
+	LeftShoulder = CFrame.Angles(math.rad(55), 0, math.rad(30)),
+	RightElbow = CFrame.identity,
+	LeftElbow = CFrame.identity,
+	RightWrist = CFrame.identity,
+	LeftWrist = CFrame.identity,
+}
+
 local function stopPose()
 	if poseConnection then
 		poseConnection:Disconnect()
@@ -602,15 +611,16 @@ local function refreshStage()
 		return
 	end
 
-	for _, name in { "RightShoulder", "LeftShoulder" } do
+	for name, transform in cuffPose do
 		local joint = stage.Suspect:FindFirstChild(name, true)
 
-		if joint then
-			poseJoints[joint] =
-				CFrame.Angles(math.rad(55), 0, math.rad(name == "RightShoulder" and -30 or 30))
+		if joint and (joint:IsA("Motor6D") or joint:IsA("AnimationConstraint")) then
+			poseJoints[joint] = transform
 		end
 	end
 
+	-- Override the entire arm chain after the Animator evaluates the walk.
+	-- Leaving elbows or wrists animated lets the cuffed hands move independently.
 	poseConnection = RunService.PreSimulation:Connect(function()
 		for joint, transform in poseJoints do
 			joint.Transform = transform

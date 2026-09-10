@@ -3,6 +3,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local QuestConfig = require(ReplicatedStorage.Modules.AnniversaryQuestConfig)
 local ClassroomSitting = require(script.Parent.ClassroomSitting)
 local ChapterPlacement = require(script.Parent.ChapterPlacement)
 local QuestService = require(script.Parent.QuestService)
@@ -178,6 +179,7 @@ beginSeating.OnServerInvoke = function(player)
 		and not QuestService:IsActiveStep(player, 4)
 		and not QuestService:IsActiveStep(player, 5)
 		and not QuestService:IsActiveStep(player, 6)
+		and not QuestService:IsActiveStep(player, QuestConfig.States.FlightClassroom)
 	then
 		return nil, "The classroom introduction is not the current quest step"
 	end

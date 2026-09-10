@@ -190,8 +190,33 @@ return function()
 
 		assert(not attributes.QuestCompleted, "Police job completed the entire quest")
 		assert(
+			not QuestService:SetState(player, "AnniversaryQuest", 16),
+			"Police completion skipped the classroom"
+		)
+		assert(
 			QuestService:CompleteObjective(player, "AnniversaryQuest", 15),
-			"Finale did not unlock"
+			"Flight classroom did not unlock"
+		)
+		assert(attributes.QuestState == 22, "Police shift did not return to the classroom")
+		QuestService:RemovePlayer(player)
+		assert(QuestService:LoadPlayer(player), "Flight classroom checkpoint did not reload")
+		assert(attributes.QuestState == 22, "Flight classroom checkpoint was lost")
+		assert(
+			QuestService:GetObjective(player).ResumeStage == "ClassroomIntro"
+				and QuestService:GetObjective(player).Cutscene == "FlightClassroom",
+			"Flight classroom resumed in the wrong scene"
+		)
+		assert(
+			not QuestService:CompleteObjective(player, "AnniversaryQuest", 15),
+			"Duplicate police departure skipped the classroom"
+		)
+		assert(
+			QuestService:CompleteObjective(player, "AnniversaryQuest", 22),
+			"Amira's classroom scene did not unlock the flight"
+		)
+		assert(
+			not QuestService:CompleteObjective(player, "AnniversaryQuest", 22),
+			"Duplicate classroom completion skipped the flight intro"
 		)
 		assert(attributes.QuestState == 16, "Flight chapter did not unlock")
 
@@ -204,10 +229,16 @@ return function()
 			end
 
 			assert(QuestService:CompleteObjective(player, "AnniversaryQuest", state))
-			assert(not QuestService:CompleteObjective(player, "AnniversaryQuest", state))
+			assert(
+				not QuestService:CompleteObjective(player, "AnniversaryQuest", state),
+				"Duplicate flight action advanced the checkpoint"
+			)
 			QuestService:RemovePlayer(player)
 			assert(QuestService:LoadPlayer(player), "Flight checkpoint did not reload")
-			assert(attributes.QuestState == (state == 21 and 6 or state + 1))
+			assert(
+				attributes.QuestState == (state == 21 and 6 or state + 1),
+				"Flight checkpoint was lost"
+			)
 		end
 
 		assert(attributes.QuestState == 6, "Original finale checkpoint was changed")

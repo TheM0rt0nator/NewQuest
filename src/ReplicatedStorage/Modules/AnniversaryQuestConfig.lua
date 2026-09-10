@@ -30,6 +30,7 @@ local AnniversaryQuestConfig = {
 		FlightTakeoff = 19,
 		FlightMeals = 20,
 		FlightComplete = 21,
+		FlightClassroom = 22,
 	},
 	Objectives = {
 		{
@@ -246,6 +247,17 @@ local AnniversaryQuestConfig = {
 			Description = "Cabin service complete — enjoy the flight",
 			ResumeStage = "FlightQuest",
 			ResumeMarker = "Arrival",
+		},
+		{
+			Id = 22,
+			Key = "FlightClassroom",
+			Type = "Event",
+			Goal = 1,
+			Progress = 0,
+			Description = "Listen to Amira's dream",
+			ResumeStage = "ClassroomIntro",
+			ResumeMarker = "Arrival",
+			Cutscene = "FlightClassroom",
 		},
 	},
 }

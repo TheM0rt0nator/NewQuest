@@ -15,6 +15,8 @@ local function nextStateId(currentState)
 	if currentState == QuestConfig.States.PoliceClassroom then
 		return QuestConfig.States.PoliceIntro
 	elseif currentState == QuestConfig.States.PoliceComplete then
+		return QuestConfig.States.FlightClassroom
+	elseif currentState == QuestConfig.States.FlightClassroom then
 		return QuestConfig.States.FlightIntro
 	elseif currentState == QuestConfig.States.FlightComplete then
 		return QuestConfig.States.ClassroomFinale
