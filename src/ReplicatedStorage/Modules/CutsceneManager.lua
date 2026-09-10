@@ -3,6 +3,14 @@ local ContextActionService = game:GetService("ContextActionService")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local Cutscene = require(script.Parent.Cutscene)
 local CutsceneDialogue = require(script.Parent.CutsceneDialogue)
+local ClassroomMusic = require(script.Parent.ClassroomMusic)
+
+local classroomScenes = {
+	ClassroomIntro = true,
+	PoliceClassroom = true,
+	FlightClassroom = true,
+	ClassroomFinale = true,
+}
 
 local Manager = {}
 local runner = Cutscene.new({
@@ -28,6 +36,10 @@ local runner = Cutscene.new({
 			table.unpack(Enum.PlayerActions:GetEnumItems())
 		)
 		context:Set(ProximityPromptService, "Enabled", false)
+
+		if classroomScenes[context.Scene.Id] then
+			ClassroomMusic.Start(context)
+		end
 	end,
 })
 

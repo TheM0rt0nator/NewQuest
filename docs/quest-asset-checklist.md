@@ -54,6 +54,12 @@ part of this list.
 
 ### Hospital / doctor
 
+10 September update: M07–M13 now have improved quest props. Medicine and bandage
+packaging and the defibrillator paddles were copied from MQ; the scalpel, syringe,
+blood bag, and metal tray stands were built with parts. The care board was removed.
+Patient, monitor, treatment animation, and sound work remain outside this pass.
+The items below retain the original commissioning suggestions for future review.
+
 - [ ] **M07 — Medicine. Replace.** Recognisable medicine container with label and
   cap. Agree whether the action gives a tablet or liquid before making its animation.
 - [ ] **M08 — Scalpel. Replace.** A readable stylised handle and blade, sized for
@@ -77,6 +83,12 @@ part of this list.
   and integration first; commission a new housing only if the current one needs it.
 
 ### Police
+
+10 September update: M16–M18 have been polished. MQ supplied the phone, car keys,
+radio, and booking-desk cuffs. The worn cuffs and chain are fitted parts; wallet,
+lockpick, and watch detailing also use parts. The scanner now has a casing, glass,
+fingerprint graphic, status lights, and equipment stand. Other police work remains
+outside this pass; the original commissioning suggestions follow for reference.
 
 - [ ] **M16 — Handcuffs. Replace.** Proper cuffs with a short connecting chain;
   currently they are blocks attached to the hands with a Beam between them. Match
@@ -270,8 +282,9 @@ not an assertion that the wider Berry Avenue map has no usable sounds.
 
 ## Inspection references
 
-- Connected Studio place: Anniversary Quest, `101522826150554`; read-only inspection
+- Original inspection place: Anniversary Quest, `101522826150554`; read-only inspection
   of `ClassroomIntro`, `DoctorQuest`, `PoliceQuest`, `FlightQuest`, and `PlaneInter`.
+  The development target moved to `133860577693306` on 10 September 2026.
 - Existing asset builders: `tools/BuildClassroom.lua`, `BuildDoctorRoom.lua`,
   `BuildPoliceQuest.lua`, and `BuildFlightQuest.lua`.
 - Runtime props: `src/ReplicatedStorage/Modules/FlightMeals.lua` and `PoliceEvidence.lua`.

@@ -231,6 +231,7 @@ return function()
 	reference.Value = workspace.PoliceStation.Interactables.Doors.Door52
 	reference.Parent = stage
 	stage.Parent = workspace
+	require(game.ServerScriptService.PoliceProps).Install(stage)
 	require(game.ReplicatedStorage.Modules.PoliceEvidence).Install(stage)
 
 	return stage

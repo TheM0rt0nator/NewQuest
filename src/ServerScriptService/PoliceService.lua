@@ -529,6 +529,7 @@ end
 function PoliceService.Start()
 	stage = workspace:WaitForChild("PoliceQuest", 15)
 	assert(stage, "Install the police quest checkpoints first")
+	require(script.Parent.PoliceProps).Install(stage)
 	PoliceEvidence.Install(stage)
 
 	if not PhysicsService:IsCollisionGroupRegistered(ACTOR_COLLISION_GROUP) then

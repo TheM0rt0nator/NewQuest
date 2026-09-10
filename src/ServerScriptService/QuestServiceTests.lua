@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 
 local ProfileStore = require(script.Parent.ServerPackages.ProfileStore)
 local QuestService = require(script.Parent.QuestService)
+local QuestReturnService = require(script.Parent.QuestReturnService)
 
 return function()
 	assert(RunService:IsStudio(), "Quest tests may only run in Studio")
@@ -242,6 +243,16 @@ return function()
 		end
 
 		assert(attributes.QuestState == 6, "Original finale checkpoint was changed")
+		QuestReturnService.Return(player)
+		assert(attributes.QuestBadgeStatus == nil, "Badge awarded before the finale")
+		assert(QuestService:CompleteFinale(player), "Finale did not complete")
+		assert(not QuestService:CompleteFinale(player), "Duplicate finale was accepted")
+		QuestReturnService.Return(player)
+		assert(attributes.QuestBadgeStatus == "StudioSkipped", "Studio attempted a live badge award")
+		assert(attributes.QuestReturnStatus == "StudioComplete", "Studio completion did not finish")
+		QuestService:RemovePlayer(player)
+		assert(QuestService:LoadPlayer(player), "Completed quest did not reload")
+		assert(attributes.QuestState == 7 and attributes.QuestCompleted, "Completion was not saved")
 		QuestService:RemovePlayer(player)
 
 		local saved = mockStore:StartSessionAsync(key)

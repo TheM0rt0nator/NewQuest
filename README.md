@@ -2,7 +2,12 @@
 
 Single-player anniversary quest destination, designed to run in the same Roblox
 universe as Berry Avenue. Connected development target: **Anniversary Quest**, place
-101522826150554.
+133860577693306.
+
+The quest runs in the current place without hardcoding its own destination ID.
+Any external entrance teleport should target **133860577693306**. The separate
+`AnniversaryQuestConfig.ReturnPlaceId` remains **8481844229**, the Berry Avenue
+return destination.
 
 ## Try chapter one
 
@@ -28,11 +33,11 @@ dialogue are editable in `src/ReplicatedStorage/Cutscenes/ClassroomIntro.lua`.
 ## Doctor shift
 
 The existing hospital bed near `(541, 20, 465)` is used for the patient. The added
-`Workspace.DoctorQuest` model contains the patient, six supply trays, care board,
+`Workspace.DoctorQuest` model contains the patient, six supply trays,
 monitor display, and arrival/camera markers. Its HospitalBed ObjectValue references
 the original bed. The hospital itself is preserved.
 
-After a short patient cutscene, collect the item named on the board with its prompt,
+After a short patient cutscene, collect the item named in the UI with its prompt,
 then return to the patient and use the treatment prompt. Medicine, shock, scalpel,
 bandage, blood bag, and injection each appear once, with Shock kept last. Each
 treatment plays an eight-second arm gesture; six treatments plus collecting and
@@ -41,8 +46,16 @@ is highlighted and the held item is visible in the player's hand.
 
 The monitor beeps more slowly after each treatment. At five of six treatments
 (the first whole-task checkpoint at or above 75%), it flashes red. After the sixth,
-the monitor returns to its normal green display and beep interval. The board shows
+the monitor returns to its normal green display and beep interval. The UI shows
 that the patient is stable and the doctor shift is complete.
+
+`DoctorProps.lua` builds stainless steel supply trays with rims, sterile liners,
+adjustable columns, and casters. The medicine and bandage boxes and defibrillator
+paddles reuse MQ's `PharmacyItems.FeverTablets`, `PharmacyItems.AdhesiveBandage`, and
+`ToolAssets.DefibrillatorLeft_Accessory` / `DefibrillatorRight_Accessory` visuals.
+The imported templates are in `src/ServerStorage/DoctorToolTemplates.rbxmx`, with
+a native backup in `assets/DoctorToolTemplates.rbxm`. Scalpel, syringe, and blood
+bag details are built from parts. The care board is removed in favour of the UI.
 
 `DoctorQuestConfig.lua` defines the tasks, timings, colours, warning threshold, and
 beep asset. The treatment gesture supports both Motor6D and AnimationConstraint
@@ -87,12 +100,45 @@ disabled. `PoliceSearch.lua` raycasts the visible geometry and moves a local 3D
 copy during dragging, keeping the suspect's physics stable. The search camera
 includes the chest, wrists, and pockets; the booking UI retains its title and count.
 
+Police props reuse MQ's `Resources.Tools.Phone`, `CarKeys`, `Walkie`, and `Cuffs`
+visuals, stored in `ServerStorage.PolicePropTemplates` with XML and native backups
+in the repository. The rigid cuff tool is displayed on the scanner's equipment
+shelf; fitted part cuffs and decorative chain links follow the suspect's existing
+wrist pose. Wallet stitching, lockpick grips, and watch markings use parts.
+`PoliceProps.lua` adds the scanner casing, glass, fingerprint graphic, status
+lights, and pedestal without changing scan timing or animations.
+
 For a temporary Studio-only police test, set the Workspace boolean attribute
 `StudioPoliceTest` to true before Play. Fresh mock profiles start at the entrance;
 existing checkpoints are preserved. Remove the attribute afterward. It has no
 effect outside Studio. Normal play keeps the hospital and Leo classroom sequence.
 
+## Flight props
+
+`FlightProps.lua` supplies the part-built food trolley and passenger lap belts.
+The trolley remains a stationary meal pickup point. Belts have separate fastened
+and loose states; Ben's buckle closes when his existing interaction completes.
+Existing installed trolley/belt models are reused so Studio edits are retained.
+
+The three flight meals are copied from MQ (`99606216494108`), from
+`ServerStorage.Assets.Cooking.Plates`: `SandwichMeal`, `GardenSalad`, and
+`MacaroniCheese` (the Pasta option). Their meshes and textures are preserved;
+tool joints are removed and the meal pivots are normalised for display/carrying.
+`src/ServerStorage/FlightMealTemplates.rbxmx` contains the Rojo-compatible models;
+`assets/FlightMealTemplates.rbxm` retains the native Studio export. The XML copy
+avoids a newer binary Tags encoding unsupported by the installed Rojo version.
+Display meals, held meals, and served meals all clone the same templates.
+
+This prop pass adds no intercom handset, passenger tray tables, animations, or sounds.
+
 ## Shared quest data
+
+Completing the final classroom scene awards badge **3360234962904323** before
+returning to Berry Avenue. `BadgeService.lua` checks ownership and retries failed
+Roblox requests up to three times. The return handler saves completion first and
+offers a retry if the badge cannot be awarded; completed players who rejoin use
+the same recovery path. Studio skips live badge awards and reports
+`QuestBadgeStatus = "StudioSkipped"` while continuing to use ProfileStore.Mock.
 
 `QuestService` uses Berry Avenue's installed ProfileStore 1.0.3, the same
 `PlayerData_LIVE` store, and the same `Player_<UserId>` keys. It loads the full

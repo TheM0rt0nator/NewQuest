@@ -153,9 +153,6 @@ return function()
 		Color3.fromRGB(89, 167, 178)
 	)
 
-	local board = part(stage, "TaskBoard", Vector3.new(6, 3.4, 0.2), CFrame.new(537, 25.1, 473.65))
-	screen(board, Vector2.new(660, 374)).Text = "DOCTOR SHIFT\n\nPrepare to meet your patient"
-
 	local monitorPosition = Vector3.new(543.8466, 22.6098, 459.8916)
 	local normal = Vector3.new(-0.89254, 0.17365, 0.41619)
 	local monitor = part(
@@ -253,6 +250,7 @@ return function()
 		station.Parent = supplies
 	end
 
+	require(game.ServerScriptService.DoctorProps).Polish(stage)
 	stage.Parent = workspace
 
 	return stage

@@ -5,6 +5,7 @@ local QuestService = require(script.Parent.QuestService)
 local ChapterPlacement = require(script.Parent.ChapterPlacement)
 local QuestConfig = require(ReplicatedStorage.Modules.AnniversaryQuestConfig)
 local Config = require(ReplicatedStorage.Modules.DoctorQuestConfig)
+local DoctorProps = require(script.Parent.DoctorProps)
 
 local DoctorService = {}
 local stage
@@ -83,24 +84,6 @@ local function refresh(player)
 	local prompt = stage.TreatmentPoint.Treat
 	prompt.Enabled = active and carrying and not busy
 	prompt.ActionText = Config.Tasks[taskId] and Config.Tasks[taskId].Action or "Treat patient"
-
-	local progress = player:GetAttribute("QuestProgress") or 0
-	local text = "DOCTOR SHIFT\n\nMeet your patient"
-
-	if active and Config.Tasks[taskId] then
-		text = string.format(
-			"PATIENT CARE  •  %d / 6\n\n%s\n%s",
-			progress,
-			Config.Tasks[taskId].Label,
-			busy and "Treatment in progress..."
-				or carrying and "Return to the patient"
-				or "Collect from the supply tray"
-		)
-	elseif QuestService:IsActiveStep(player, QuestConfig.States.DoctorComplete) then
-		text = "SHIFT COMPLETE  •  6 / 6\n\nPATIENT STABLE\nWell done, doctor!"
-	end
-
-	stage.TaskBoard.Display.Text.Text = text
 end
 
 local function release(player)
@@ -262,6 +245,7 @@ end
 function DoctorService.Start()
 	stage = workspace:WaitForChild("DoctorQuest", 15)
 	assert(stage, "Install the doctor room props first")
+	DoctorProps.Polish(stage)
 	ReplicatedStorage.BeginDoctorIntro.OnServerInvoke = DoctorService.BeginIntro
 	ReplicatedStorage.EndDoctorIntro.OnServerEvent:Connect(DoctorService.EndIntro)
 

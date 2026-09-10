@@ -1,5 +1,7 @@
 -- Adds quest actors and interactions to the existing cabin without moving the plane.
 local Config = require(game.ReplicatedStorage.Modules.FlightQuestConfig)
+local FlightMeals = require(game.ReplicatedStorage.Modules.FlightMeals)
+local FlightProps = require(game.ServerScriptService.FlightProps)
 
 local function part(parent, name, size, cf, color)
 	local object = Instance.new("Part")
@@ -101,21 +103,7 @@ return function()
 		model:PivotTo(seats[passenger.Seat].CFrame * CFrame.new(0, 1.6, 0))
 		model.Parent = passengers
 
-		local torso = model:FindFirstChild("LowerTorso") or model.PrimaryPart
-		local belt = part(
-			model,
-			"Seatbelt",
-			Vector3.new(1.8, 0.18, 0.12),
-			torso.CFrame * CFrame.new(0, -0.15, -0.55),
-			Color3.fromRGB(38, 45, 57)
-		)
-		belt.Anchored = false
-		belt.Massless = true
-
-		local weld = Instance.new("WeldConstraint")
-		weld.Part0 = torso
-		weld.Part1 = belt
-		weld.Parent = belt
+		FlightProps.BuildSeatbelt(model)
 
 		prompt(model.HumanoidRootPart, "Serve meal", passenger.Name)
 		label(model.Head, passenger.Name)
@@ -149,9 +137,12 @@ return function()
 
 	local engine = Instance.new("Sound")
 	engine.Name = "TakeoffEngine"
-	engine.SoundId = "rbxassetid://6474671521"
+	engine.SoundId = "rbxassetid://16880017184"
 	engine.Volume = 0.45
 	engine.Parent = stage
+
+	FlightProps.BuildTrolley(stage)
+	FlightProps.BuildMealDisplay(stage, FlightMeals.Create)
 
 	stage.Parent = workspace
 

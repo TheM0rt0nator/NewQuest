@@ -9,6 +9,7 @@ local PoliceQuestConfig = {
 	},
 	ScanDuration = 5,
 	PhotoDuration = 1.5,
+	ShutterSoundId = "rbxassetid://8974344071",
 	WalkSpeed = 7,
 	InteractionDistance = 9,
 	DepartureDelay = 6,

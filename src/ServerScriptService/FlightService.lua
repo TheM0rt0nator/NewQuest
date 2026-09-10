@@ -5,6 +5,7 @@ local ChapterPlacement = require(script.Parent.ChapterPlacement)
 local ClassroomSitting = require(script.Parent.ClassroomSitting)
 local Config = require(ReplicatedStorage.Modules.FlightQuestConfig)
 local FlightMeals = require(ReplicatedStorage.Modules.FlightMeals)
+local FlightProps = require(script.Parent.FlightProps)
 local QuestConfig = require(ReplicatedStorage.Modules.AnniversaryQuestConfig)
 local QuestService = require(script.Parent.QuestService)
 
@@ -101,8 +102,7 @@ local function refresh(player)
 		model.Head.Label.Enabled = active and (checkBelt or serve)
 		model.Head.Label.Text.Text = checkBelt and passenger.Name .. "\nSeatbelt unfastened"
 			or passenger.Name .. "\n" .. passenger.Meal .. ", please!"
-		model.Seatbelt.Transparency = passenger.Name == Config.SeatbeltPassenger and state <= 18
-			and 1 or 0
+		FlightProps.SetSeatbelt(model, not (passenger.Name == Config.SeatbeltPassenger and state <= 18))
 
 		local served = state == 20 and index <= progress or state == 21
 
@@ -250,13 +250,15 @@ function FlightService.Action(player, action, value)
 			tray:PivotTo(hand.CFrame * CFrame.new(0, -0.3, 0))
 			tray.Parent = player.Character
 
-			for _, part in tray:GetChildren() do
-				part.Anchored = false
+			for _, part in tray:GetDescendants() do
+				if part:IsA("BasePart") then
+					part.Anchored = false
 
-				local weld = Instance.new("WeldConstraint")
-				weld.Part0 = hand
-				weld.Part1 = part
-				weld.Parent = part
+					local weld = Instance.new("WeldConstraint")
+					weld.Part0 = hand
+					weld.Part1 = part
+					weld.Parent = part
+				end
 			end
 
 			heldTray = tray
@@ -290,12 +292,11 @@ end
 
 function FlightService.Start()
 	stage = workspace:WaitForChild("FlightQuest")
+	FlightProps.BuildTrolley(stage)
+	FlightProps.BuildMealDisplay(stage, FlightMeals.Create)
 
-	for index, meal in Config.Meals do
-		local sample = FlightMeals.Create(meal)
-		sample:ScaleTo(0.55)
-		sample:PivotTo(stage.Galley.CFrame * CFrame.new((index - 2) * 0.85, 1.45, 0))
-		sample.Parent = stage
+	for _, passenger in stage.Passengers:GetChildren() do
+		FlightProps.BuildSeatbelt(passenger)
 	end
 
 	local remote = ReplicatedStorage:FindFirstChild("FlightAction")

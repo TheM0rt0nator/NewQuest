@@ -4,6 +4,7 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local ContextActionService = game:GetService("ContextActionService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local ContentProvider = game:GetService("ContentProvider")
 
 local Config = require(ReplicatedStorage.Modules.PoliceQuestConfig)
 local Cutscene = require(ReplicatedStorage.Modules.Cutscene)
@@ -34,6 +35,18 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.DisplayOrder = 115
 gui.Parent = player:WaitForChild("PlayerGui")
+
+local shutter = Instance.new("Sound")
+shutter.Name = "MugshotShutter"
+shutter.SoundId = Config.ShutterSoundId
+shutter.Volume = 0.35
+shutter.Parent = gui
+
+task.spawn(function()
+	pcall(function()
+		ContentProvider:PreloadAsync({ shutter })
+	end)
+end)
 
 local text = QuestUI.Label
 local button = QuestUI.Button
@@ -257,7 +270,7 @@ local function departure()
 			task.wait(0.1)
 		until os.clock() >= deadline
 		dream = DreamTransition.Take(player.PlayerGui)
-		dream:Cover(check)
+		dream:Cover(check, true)
 		DreamTransition.HandOff(dream)
 
 		local finished, failure = invoke("FinishDeparture")
@@ -445,6 +458,22 @@ local function panel(state)
 				action.Text = state == 10 and "Scanning..." or "Saving photo..."
 
 				if state == 11 then
+					if not shutter.IsLoaded then
+						pcall(function()
+							ContentProvider:PreloadAsync({ shutter })
+						end)
+					end
+
+					if closed then
+						processing = false
+						return
+					end
+
+					if shutter.IsLoaded then
+						shutter.TimePosition = 0
+						shutter:Play()
+					end
+
 					local flash = Instance.new("Frame")
 					flash.Size = UDim2.fromScale(1, 1)
 					flash.BackgroundColor3 = Color3.new(1, 1, 1)

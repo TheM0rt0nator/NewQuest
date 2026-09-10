@@ -103,8 +103,12 @@ local function updateObjective()
 
 	if returnStatus == "Teleporting" then
 		objectiveLabel.Text = "QUEST COMPLETE\nReturning to Berry Avenue..."
+	elseif returnStatus == "AwardingBadge" then
+		objectiveLabel.Text = "QUEST COMPLETE\nCollecting your completion badge..."
 	elseif returnStatus == "Failed" then
-		objectiveLabel.Text = "QUEST COMPLETE\nCouldn't return to Berry Avenue. Please try again."
+		objectiveLabel.Text = player:GetAttribute("QuestBadgeStatus") == "Failed"
+				and "QUEST COMPLETE\nCouldn't award your badge. Please try again."
+			or "QUEST COMPLETE\nCouldn't return to Berry Avenue. Please try again."
 	end
 
 	local taskId = player:GetAttribute("DoctorTask")
@@ -185,10 +189,10 @@ local function playIntro()
 			assert(not currentHumanoid or currentHumanoid.Health > 0, "Character died")
 		end
 
-		local function coverDream(check)
+		local function coverDream(check, returningToReality)
 			if not dream then
 				dream = DreamTransition.Take(playerGui)
-				dream:Cover(check or checkCharacter)
+				dream:Cover(check or checkCharacter, returningToReality)
 			end
 		end
 
@@ -306,17 +310,17 @@ local function playIntro()
 				task.wait(0.05)
 			end
 
-			coverDream()
+			coverDream(nil, true)
 		end
 
 		if finaleRequested then
 			retry.Text = "Retry class dismissal"
-			coverDream()
+			coverDream(nil, true)
 		end
 
 		if flightRequested then
 			retry.Text = "Retry Amira's classroom scene"
-			coverDream()
+			coverDream(nil, true)
 		end
 
 		humanoid = character:FindFirstChildOfClass("Humanoid")

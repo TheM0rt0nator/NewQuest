@@ -4,6 +4,8 @@ local ProximityPromptService = game:GetService("ProximityPromptService")
 local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local ContextActionService = game:GetService("ContextActionService")
+local ContentProvider = game:GetService("ContentProvider")
+local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Modules.FlightQuestConfig)
 local DreamTransition = require(ReplicatedStorage.Modules.DreamTransition)
@@ -40,6 +42,57 @@ local errorUntil = 0
 local sequenceVersion = 0
 local refresh
 local resume
+local cruising = false
+local ambienceFade
+local diedConnection
+local ambience = Instance.new("Sound")
+ambience.Name = "PlaneCruiseAmbience"
+ambience.SoundId = Config.CruiseSoundId
+ambience.Looped = true
+ambience.Volume = 0
+ambience.Parent = gui
+stage.TakeoffEngine.SoundId = Config.TakeoffSoundId
+
+local function stopAmbience()
+	if ambienceFade then
+		ambienceFade:Cancel()
+		ambienceFade = nil
+	end
+
+	ambience:Stop()
+	ambience.Volume = 0
+end
+
+local function playAmbience()
+	if ambience.IsLoaded and not ambience.IsPlaying then
+		ambience:Play()
+		ambienceFade = TweenService:Create(ambience, TweenInfo.new(2), { Volume = 0.25 })
+		ambienceFade:Play()
+	end
+end
+
+local function bindAudioLifetime(character)
+	if diedConnection then
+		diedConnection:Disconnect()
+		diedConnection = nil
+	end
+
+	local humanoid = character:WaitForChild("Humanoid", 10)
+
+	if humanoid and character == player.Character then
+		diedConnection = humanoid.Died:Connect(stopAmbience)
+	end
+end
+
+task.spawn(function()
+	pcall(function()
+		ContentProvider:PreloadAsync({ stage.TakeoffEngine, ambience })
+	end)
+
+	if refresh then
+		refresh()
+	end
+end)
 
 local function invoke(action, value)
 	local ok, success, reason = pcall(remote.InvokeServer, remote, action, value)
@@ -207,9 +260,22 @@ local function scene(state)
 		end
 
 		if state == 19 then
+			cruising = false
+			stopAmbience()
 			engine = stage.TakeoffEngine:Clone()
 			engine.Parent = SoundService
-			engine:Play()
+
+			if not engine.IsLoaded then
+				pcall(function()
+					ContentProvider:PreloadAsync({ engine })
+				end)
+			end
+
+			check()
+
+			if engine.IsLoaded then
+				engine:Play()
+			end
 		end
 
 		if state == 16 then
@@ -254,6 +320,12 @@ local function scene(state)
 				hint.Text = "SAFETY ANNOUNCEMENT\n"
 					.. pages[math.min(4, math.floor(progress * 4) + 1)]
 			elseif state == 19 then
+				if progress >= 0.8 and not cruising then
+					cruising = true
+					playAmbience()
+					TweenService:Create(engine, TweenInfo.new(2), { Volume = 0 }):Play()
+				end
+
 				local strength = math.sin(progress * math.pi)
 				camera.CFrame = stage.Markers.TakeoffCamera.CFrame
 					* CFrame.new(math.sin(elapsed * 22) * strength * 0.035,
@@ -273,8 +345,14 @@ local function scene(state)
 		until elapsed >= duration
 
 		if state == 21 then
+			if ambienceFade then
+				ambienceFade:Cancel()
+			end
+
+			ambienceFade = TweenService:Create(ambience, TweenInfo.new(1.4), { Volume = 0 })
+			ambienceFade:Play()
 			dream = DreamTransition.Take(player.PlayerGui)
-			dream:Cover(check)
+			dream:Cover(check, true)
 			DreamTransition.HandOff(dream)
 			camera.CameraType = originalType
 			camera.CFrame = originalFrame
@@ -301,6 +379,11 @@ local function scene(state)
 
 	if engine then
 		engine:Destroy()
+	end
+
+	if state == 19 and not ok then
+		cruising = false
+		stopAmbience()
 	end
 
 	if dream then
@@ -338,6 +421,17 @@ end
 refresh = function()
 	local state = player:GetAttribute("QuestState") or 0
 	local active = player:GetAttribute("QuestDataReady") == true and state >= 16 and state <= 21
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+
+	if active and humanoid and humanoid.Health > 0
+		and (state >= 20 or state == 19 and cruising)
+	then
+		playAmbience()
+	else
+		stopAmbience()
+	end
+
 	hint.Visible = active
 	highlight.Enabled = active and not busy
 
@@ -427,13 +521,21 @@ for _, attribute in { "QuestState", "QuestProgress", "FlightMeal", "QuestDataRea
 end
 
 player.CharacterRemoving:Connect(function()
+	if diedConnection then
+		diedConnection:Disconnect()
+		diedConnection = nil
+	end
+
+	cruising = false
+	stopAmbience()
 	sequenceVersion += 1
 	closeMenu()
 	retry.Visible = false
 	hint.Visible = false
 	highlight.Enabled = false
 end)
-player.CharacterAdded:Connect(function()
+player.CharacterAdded:Connect(function(character)
+	task.spawn(bindAudioLifetime, character)
 	task.spawn(function()
 		while busy do
 			task.wait(0.1)
@@ -443,6 +545,10 @@ player.CharacterAdded:Connect(function()
 		refresh()
 	end)
 end)
+if player.Character then
+	task.spawn(bindAudioLifetime, player.Character)
+end
+
 retry.Activated:Connect(function()
 	scene(player:GetAttribute("QuestState"))
 end)

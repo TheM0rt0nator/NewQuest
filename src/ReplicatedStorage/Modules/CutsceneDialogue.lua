@@ -1,5 +1,6 @@
 -- Presents cutscene dialogue with the game's NPCChat artwork and controls.
 local StarterGui = game:GetService("StarterGui")
+local QuestUISound = require(script.Parent.QuestUISound)
 
 local CutsceneDialogue = {}
 
@@ -27,6 +28,7 @@ local function createInterface(context)
 	text.Text = ""
 	text.MaxVisibleGraphemes = 0
 	nextButton.Visible = true
+	QuestUISound.Bind(nextButton)
 
 	local close = panel:FindFirstChild("Close")
 

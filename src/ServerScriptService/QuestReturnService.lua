@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 
 local Config = require(ReplicatedStorage.Modules.AnniversaryQuestConfig)
+local BadgeService = require(script.Parent.BadgeService)
 local QuestService = require(script.Parent.QuestService)
 
 local QuestReturnService = {}
@@ -23,18 +24,13 @@ function QuestReturnService.Return(player)
 		return
 	end
 
-	if RunService:IsStudio() then
-		player:SetAttribute("QuestReturnStatus", "StudioComplete")
-
-		return
-	end
-
 	if os.clock() - (lastAttempt[player] or -math.huge) < 3 then
 		return
 	end
 
 	lastAttempt[player] = os.clock()
 	pending[player] = true
+	player:SetAttribute("QuestBadgeStatus", nil)
 	player:SetAttribute("QuestReturnStatus", "Saving")
 
 	if not QuestService:WaitForCompletionSave(player) then
@@ -46,6 +42,33 @@ function QuestReturnService.Return(player)
 
 	if player.Parent ~= Players then
 		pending[player] = nil
+
+		return
+	end
+
+	-- Keep the player here until the saved completion reward is confirmed.
+	-- Returning completed players use this same path to recover a missed award.
+	player:SetAttribute("QuestReturnStatus", "AwardingBadge")
+
+	local awarded, badgeStatus = BadgeService.Award(player, Config.CompletionBadgeId)
+	player:SetAttribute("QuestBadgeStatus", badgeStatus)
+
+	if player.Parent ~= Players then
+		pending[player] = nil
+
+		return
+	end
+
+	if not awarded then
+		pending[player] = nil
+		player:SetAttribute("QuestReturnStatus", "Failed")
+
+		return
+	end
+
+	if RunService:IsStudio() then
+		pending[player] = nil
+		player:SetAttribute("QuestReturnStatus", "StudioComplete")
 
 		return
 	end

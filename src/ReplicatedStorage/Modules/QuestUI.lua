@@ -1,4 +1,6 @@
 -- Native UI styled to match Berry Avenue's NPCChat: pale paper and Arcade text.
+local QuestUISound = require(script.Parent.QuestUISound)
+
 local QuestUI = {
 	Paper = Color3.fromRGB(252, 250, 255),
 	Ink = Color3.fromRGB(32, 27, 38),
@@ -39,6 +41,7 @@ function QuestUI.Style(object, isButton)
 
 	if isButton then
 		object.AutoButtonColor = true
+		QuestUISound.Bind(object)
 	end
 end
 

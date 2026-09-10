@@ -21,6 +21,37 @@ local function build(item, body, offset)
 	model:SetAttribute("Label", item.Label)
 
 	local origin = body.CFrame * offset
+	local templates = game:GetService("ServerStorage"):FindFirstChild("PolicePropTemplates")
+	local template = templates and templates:FindFirstChild(item.Id)
+
+	if template then
+		model:Destroy()
+		model = template:Clone()
+		model.Name = item.Id
+		model:SetAttribute("ItemId", item.Id)
+		model:SetAttribute("Label", item.Label)
+
+		if item.Id == "Keys" then
+			model:PivotTo(CFrame.Angles(0, -math.pi / 2, 0))
+		else
+			model:PivotTo(CFrame.Angles(0, math.pi, 0))
+		end
+
+		model:PivotTo(origin * model:GetPivot())
+
+		for _, object in model:GetDescendants() do
+			if object:IsA("BasePart") then
+				object.Anchored = false
+				object.Massless = true
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = body
+				weld.Part1 = object
+				weld.Parent = object
+			end
+		end
+
+		return model
+	end
 
 	local function part(name, size, position, color, round)
 		local object = Instance.new("Part")
@@ -76,6 +107,13 @@ local function build(item, body, offset)
 			Color3.fromRGB(181, 133, 85)
 		)
 		part("Clasp", Vector3.new(0.14, 0.21, 0.03), Vector3.new(0.2, 0, -0.105), GOLD)
+		part("Card", Vector3.new(0.52, 0.13, 0.035), Vector3.new(-0.04, 0.23, 0), SILVER)
+		for index = 1, 10 do
+			part("Stitch", Vector3.new(0.025, 0.018, 0.012),
+				Vector3.new(-0.32 + index * 0.057, 0.18, -0.1), GOLD)
+			part("Stitch", Vector3.new(0.025, 0.018, 0.012),
+				Vector3.new(-0.32 + index * 0.057, -0.2, -0.1), GOLD)
+		end
 	elseif item.Id == "Keys" then
 		part("KeyHead", Vector3.new(0.09, 0.3, 0.3), Vector3.new(0, 0.12, 0), SILVER, true)
 		for index = 1, 2 do
@@ -99,6 +137,12 @@ local function build(item, body, offset)
 		part("Hook", Vector3.new(0.17, 0.06, 0.06), Vector3.new(0.055, 0.46, 0), SILVER)
 		part("TensionWrench", Vector3.new(0.06, 0.6, 0.08), Vector3.new(0.24, 0.04, 0), SILVER)
 		part("WrenchTip", Vector3.new(0.2, 0.06, 0.08), Vector3.new(0.17, -0.24, 0), SILVER)
+		for index = 1, 4 do
+			part("GripRidge", Vector3.new(0.17, 0.02, 0.025),
+				Vector3.new(0, -0.3 + index * 0.065, -0.07), DARK)
+		end
+		part("Rivet", Vector3.new(0.02, 0.04, 0.04),
+			Vector3.new(0, -0.025, -0.075), SILVER, true)
 	elseif item.Id == "Radio" then
 		part("Housing", Vector3.new(0.55, 0.75, 0.26), Vector3.zero, DARK)
 		part("Antenna", Vector3.new(0.07, 0.48, 0.07), Vector3.new(-0.17, 0.59, 0), DARK)
@@ -128,6 +172,15 @@ local function build(item, body, offset)
 		)
 		part("HourHand", Vector3.new(0.035, 0.14, 0.02), Vector3.new(0, 0.055, -0.19), DARK)
 		part("MinuteHand", Vector3.new(0.16, 0.025, 0.02), Vector3.new(0.065, 0, -0.19), DARK)
+		part("Crown", Vector3.new(0.075, 0.09, 0.09), Vector3.new(0.27, 0, -0.09), GOLD)
+		for index = 1, 12 do
+			local angle = index * math.pi / 6
+			part("HourMarker", Vector3.new(0.024, 0.024, 0.012),
+				Vector3.new(math.sin(angle) * 0.15, math.cos(angle) * 0.15, -0.19), GOLD)
+		end
+		for _, y in { -0.31, 0.31 } do
+			part("StrapStitch", Vector3.new(0.21, 0.018, 0.01), Vector3.new(0, y, -0.06), SILVER)
+		end
 	end
 
 	local attachment = Instance.new("WeldConstraint")

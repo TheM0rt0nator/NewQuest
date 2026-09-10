@@ -45,6 +45,11 @@
       },
       "$ignoreUnknownInstances": true
     },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "$path": "src/ServerStorage",
+      "$ignoreUnknownInstances": true
+    },
     "Workspace": {
       "$className": "Workspace",
       "$ignoreUnknownInstances": true,

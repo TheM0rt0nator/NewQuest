@@ -1,9 +1,35 @@
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
+local Debris = game:GetService("Debris")
+local ContentProvider = game:GetService("ContentProvider")
+
+local Config = require(script.Parent.AnniversaryQuestConfig)
+local ClassroomMusic = require(script.Parent.ClassroomMusic)
 
 local DreamTransition = {}
 DreamTransition.__index = DreamTransition
 
 local pending
+local soundTemplates = {}
+
+for name, id in {
+	EnterDream = Config.EnterDreamSoundId,
+	ReturnToReality = Config.ReturnToRealitySoundId,
+} do
+	local sound = Instance.new("Sound")
+	sound.Name = name
+	sound.SoundId = id
+	sound.Volume = 0.6
+	sound.Parent = SoundService
+	soundTemplates[name] = sound
+end
+
+-- Warm the cache as soon as the client loads, while the classroom is starting.
+task.spawn(function()
+	pcall(function()
+		ContentProvider:PreloadAsync({ soundTemplates.EnterDream, soundTemplates.ReturnToReality })
+	end)
+end)
 
 -- Keep one covered screen while the classroom and job controllers hand over.
 function DreamTransition.Take(playerGui)
@@ -103,8 +129,36 @@ function DreamTransition:Animate(entering, check)
 	end
 end
 
-function DreamTransition:Cover(check)
+function DreamTransition:Cover(check, returningToReality)
 	if not self.Covered then
+		check()
+		ClassroomMusic.Stop()
+		local name = returningToReality and "ReturnToReality" or "EnterDream"
+		local sound = soundTemplates[name]:Clone()
+		sound.Parent = SoundService
+		self.Sound = sound
+
+		if not sound.IsLoaded then
+			pcall(function()
+				ContentProvider:PreloadAsync({ sound })
+			end)
+		end
+
+		check()
+
+		sound.Ended:Once(function()
+			sound:Destroy()
+		end)
+		Debris:AddItem(sound, 30)
+		if sound.IsLoaded then
+			sound:Play()
+		else
+			-- An unavailable asset must not start late or block quest progression.
+			warn("[DreamTransition] Could not load sound:", sound.SoundId)
+			sound:Destroy()
+			self.Sound = nil
+		end
+
 		self:Animate(true, check)
 		self.Covered = true
 	end
@@ -112,10 +166,17 @@ end
 
 function DreamTransition:Reveal(check)
 	self:Animate(false, check)
+	-- Let a successful transition's audio tail finish after the veil disappears.
+	self.Sound = nil
 	self:Destroy()
 end
 
 function DreamTransition:Destroy()
+	if self.Sound then
+		self.Sound:Destroy()
+		self.Sound = nil
+	end
+
 	if pending == self then
 		pending = nil
 	end
