@@ -21,6 +21,17 @@ if not stage then
 	return
 end
 
+-- Markers are editor guides, never visible or interactive during gameplay.
+for _, marker in stage.Markers:GetDescendants() do
+	if marker:IsA("BasePart") then
+		marker.Transparency = 1
+		marker.Anchored = true
+		marker.CanCollide = false
+		marker.CanTouch = false
+		marker.CanQuery = false
+	end
+end
+
 for _, actor in stage.Actors:GetChildren() do
 	if actor:GetAttribute("ClassroomSeat") then
 		ClassroomSitting.Play(actor.Humanoid)

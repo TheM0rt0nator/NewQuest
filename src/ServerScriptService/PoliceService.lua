@@ -183,32 +183,20 @@ local function lock(player, state)
 	return captured
 end
 
-local function moveModel(model, destination, duration)
-	local value = Instance.new("CFrameValue")
-	value.Value = model:GetPivot()
-
-	local connection = value.Changed:Connect(function(cf)
-		model:PivotTo(cf)
-	end)
-
-	local tween = TweenService:Create(value, TweenInfo.new(duration), { Value = destination })
-	tween:Play()
-	tween.Completed:Wait()
-	connection:Disconnect()
-	value:Destroy()
-end
-
 local function setCell(open, animate)
 	local door = stage.CellDoor.Value
 	local destination = open and doorClosed * CFrame.Angles(0, math.rad(-85), 0) or doorClosed
 
-	if animate then
-		moveModel(door, destination, 0.8)
-	else
-		door:PivotTo(destination)
-	end
-
+	-- Replicate the endpoint once; the client animates its local door model.
+	door:PivotTo(destination)
+	door:SetAttribute("CellDoorDuration", animate and 0.8 or 0)
+	door:SetAttribute("CellDoorTarget", destination)
 	door:SetAttribute("IsOpen", open)
+	door:SetAttribute("CellDoorRevision", (door:GetAttribute("CellDoorRevision") or 0) + 1)
+
+	if animate then
+		task.wait(0.8)
+	end
 end
 
 local function walk(model, marker, valid, via)

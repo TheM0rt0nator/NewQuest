@@ -109,10 +109,18 @@ local function build(item, body, offset)
 		part("Clasp", Vector3.new(0.14, 0.21, 0.03), Vector3.new(0.2, 0, -0.105), GOLD)
 		part("Card", Vector3.new(0.52, 0.13, 0.035), Vector3.new(-0.04, 0.23, 0), SILVER)
 		for index = 1, 10 do
-			part("Stitch", Vector3.new(0.025, 0.018, 0.012),
-				Vector3.new(-0.32 + index * 0.057, 0.18, -0.1), GOLD)
-			part("Stitch", Vector3.new(0.025, 0.018, 0.012),
-				Vector3.new(-0.32 + index * 0.057, -0.2, -0.1), GOLD)
+			part(
+				"Stitch",
+				Vector3.new(0.025, 0.018, 0.012),
+				Vector3.new(-0.32 + index * 0.057, 0.18, -0.1),
+				GOLD
+			)
+			part(
+				"Stitch",
+				Vector3.new(0.025, 0.018, 0.012),
+				Vector3.new(-0.32 + index * 0.057, -0.2, -0.1),
+				GOLD
+			)
 		end
 	elseif item.Id == "Keys" then
 		part("KeyHead", Vector3.new(0.09, 0.3, 0.3), Vector3.new(0, 0.12, 0), SILVER, true)
@@ -138,11 +146,14 @@ local function build(item, body, offset)
 		part("TensionWrench", Vector3.new(0.06, 0.6, 0.08), Vector3.new(0.24, 0.04, 0), SILVER)
 		part("WrenchTip", Vector3.new(0.2, 0.06, 0.08), Vector3.new(0.17, -0.24, 0), SILVER)
 		for index = 1, 4 do
-			part("GripRidge", Vector3.new(0.17, 0.02, 0.025),
-				Vector3.new(0, -0.3 + index * 0.065, -0.07), DARK)
+			part(
+				"GripRidge",
+				Vector3.new(0.17, 0.02, 0.025),
+				Vector3.new(0, -0.3 + index * 0.065, -0.07),
+				DARK
+			)
 		end
-		part("Rivet", Vector3.new(0.02, 0.04, 0.04),
-			Vector3.new(0, -0.025, -0.075), SILVER, true)
+		part("Rivet", Vector3.new(0.02, 0.04, 0.04), Vector3.new(0, -0.025, -0.075), SILVER, true)
 	elseif item.Id == "Radio" then
 		part("Housing", Vector3.new(0.55, 0.75, 0.26), Vector3.zero, DARK)
 		part("Antenna", Vector3.new(0.07, 0.48, 0.07), Vector3.new(-0.17, 0.59, 0), DARK)
@@ -175,8 +186,12 @@ local function build(item, body, offset)
 		part("Crown", Vector3.new(0.075, 0.09, 0.09), Vector3.new(0.27, 0, -0.09), GOLD)
 		for index = 1, 12 do
 			local angle = index * math.pi / 6
-			part("HourMarker", Vector3.new(0.024, 0.024, 0.012),
-				Vector3.new(math.sin(angle) * 0.15, math.cos(angle) * 0.15, -0.19), GOLD)
+			part(
+				"HourMarker",
+				Vector3.new(0.024, 0.024, 0.012),
+				Vector3.new(math.sin(angle) * 0.15, math.cos(angle) * 0.15, -0.19),
+				GOLD
+			)
 		end
 		for _, y in { -0.31, 0.31 } do
 			part("StrapStitch", Vector3.new(0.21, 0.018, 0.01), Vector3.new(0, y, -0.06), SILVER)
@@ -209,6 +224,25 @@ function PoliceEvidence.Install(stage)
 	end
 
 	-- Normalize existing evidence as well as newly created items.
+	local watch = folder:FindFirstChild("Watch")
+
+	if watch and not watch:GetAttribute("WristRotationCorrected") then
+		local bodyWeld = watch:FindFirstChild("BodyWeld", true)
+		local wrist = bodyWeld and bodyWeld.Part0
+
+		if bodyWeld then
+			bodyWeld.Part0 = nil
+		end
+
+		watch:PivotTo(watch:GetPivot() * CFrame.Angles(0, 0, math.pi / 2))
+
+		if bodyWeld then
+			bodyWeld.Part0 = wrist
+		end
+
+		watch:SetAttribute("WristRotationCorrected", true)
+	end
+
 	for _, object in folder:GetDescendants() do
 		if object:IsA("BasePart") then
 			object.Massless = true

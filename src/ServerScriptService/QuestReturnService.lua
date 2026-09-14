@@ -10,8 +10,47 @@ local QuestService = require(script.Parent.QuestService)
 local QuestReturnService = {}
 local pending = {}
 local lastAttempt = {}
+local celebrationStarted = {}
+local celebrated = {}
 
-function QuestReturnService.Return(player)
+local function finishReturn(player)
+	if RunService:IsStudio() then
+		pending[player] = nil
+		player:SetAttribute("QuestReturnStatus", "StudioComplete")
+
+		return
+	end
+
+	player:SetAttribute("QuestReturnStatus", "Teleporting")
+
+	local ok, reason = pcall(function()
+		TeleportService:TeleportAsync(Config.ReturnPlaceId, { player })
+	end)
+
+	if not ok then
+		pending[player] = nil
+		player:SetAttribute("QuestReturnStatus", "Failed")
+		warn("[QuestReturn]", reason)
+	end
+end
+
+function QuestReturnService.Return(player, action)
+	if action == "CelebrationFinished" then
+		local started = celebrationStarted[player]
+
+		if
+			pending[player]
+			and started
+			and os.clock() - started >= Config.CompletionCelebrationDuration
+		then
+			celebrationStarted[player] = nil
+			celebrated[player] = true
+			finishReturn(player)
+		end
+
+		return
+	end
+
 	local quest = QuestService:GetQuestData(player, Config.Name)
 
 	if
@@ -66,24 +105,14 @@ function QuestReturnService.Return(player)
 		return
 	end
 
-	if RunService:IsStudio() then
-		pending[player] = nil
-		player:SetAttribute("QuestReturnStatus", "StudioComplete")
+	if not celebrated[player] then
+		celebrationStarted[player] = os.clock()
+		player:SetAttribute("QuestReturnStatus", "Celebrating")
 
 		return
 	end
 
-	player:SetAttribute("QuestReturnStatus", "Teleporting")
-
-	local ok, reason = pcall(function()
-		TeleportService:TeleportAsync(Config.ReturnPlaceId, { player })
-	end)
-
-	if not ok then
-		pending[player] = nil
-		player:SetAttribute("QuestReturnStatus", "Failed")
-		warn("[QuestReturn]", reason)
-	end
+	finishReturn(player)
 end
 
 TeleportService.TeleportInitFailed:Connect(function(player, _, message, placeId)
@@ -97,6 +126,8 @@ end)
 Players.PlayerRemoving:Connect(function(player)
 	pending[player] = nil
 	lastAttempt[player] = nil
+	celebrationStarted[player] = nil
+	celebrated[player] = nil
 end)
 
 return QuestReturnService

@@ -11,6 +11,11 @@ return destination.
 
 ## Try chapter one
 
+For a quick completion-screen preview, press **Play**, then click
+**TEST COMPLETION** in the bottom-right corner. Click **STOP PREVIEW** to cancel,
+or let the seven-second animation finish and click again to replay it. This
+Studio-only button does not advance quest data, award a badge, or teleport you.
+
 Press **Play** in the selected Studio. At the classroom quest step, the player is
 seated at the middle-row desk before the opening shot is revealed. Movement and
 jumping are disabled during preparation and playback. Ms Taylor asks
@@ -76,6 +81,14 @@ props remain hidden when the search resumes. Scan and photo use buttons. The cel
 requires separate open, escort, and close interactions before returning to the
 classroom for Amira's air hostess scene.
 
+The cell door animates on the client using a local copy of the door geometry.
+The server publishes each endpoint once and retains the quest checks and timing;
+replicated part movement cannot interrupt the visible tween. Animation connections
+exist only during movement and are cleaned up afterward. The evidence watch is
+rotated 90 degrees across the wrist, with a one-time correction for existing props.
+Studio mock checks passed opening (49 changing frames), escorting the suspect,
+and closing (48 changing frames), advancing through states 12–15.
+
 Walking uses `Humanoid:MoveTo()` through editable corridor markers, with one
 continuous animation per route. There is no runtime pathfinding or position
 snapping. Long walks renew MoveTo before its engine timeout. NPC body collisions
@@ -139,6 +152,28 @@ Roblox requests up to three times. The return handler saves completion first and
 offers a retry if the badge cannot be awarded; completed players who rejoin use
 the same recovery path. Studio skips live badge awards and reports
 `QuestBadgeStatus = "StudioSkipped"` while continuing to use ProfileStore.Mock.
+
+Once the save and badge checks succeed, a seven-second completion celebration
+plays before the return teleport: an animated Berry Avenue-style pink card, a Roblox
+victory sound, and eight bursts of native 2D UI fireworks. Each burst plays the
+explosion sound from Seoul Celebration Night's
+`Workspace.Fireworks.Standard.Explosion.Sound` (`122330455105525`).
+`CompletionFireworkSoundId` and `CompletionFireworkVolume` configure it. Both
+celebration audio assets preload once when the client starts. Movement is locked
+during the celebration. `AnniversaryQuestConfig.CompletionSoundId` and
+`CompletionCelebrationDuration` control the sound and duration.
+`QuestCelebration.lua` owns its temporary UI, sound, tweens, and frame connection,
+and removes them when playback ends or is cancelled. No celebration loop runs
+outside playback. The server waits for the client's finished message and rejects
+messages received before the full duration. A failed teleport can be retried
+without replaying the celebration in the same session.
+
+Studio verification used mock data and the final classroom checkpoint: the sound
+loaded and played, early completion was rejected, and the return reached
+`StudioComplete` after 7.08 seconds. Repeated playback calls created one
+celebration, and the UI, sound, and movement binding were removed afterward.
+The desktop card and fireworks were visually checked. Studio skips actual
+cross-place teleports and live badge awards.
 
 `QuestService` uses Berry Avenue's installed ProfileStore 1.0.3, the same
 `PlayerData_LIVE` store, and the same `Player_<UserId>` keys. It loads the full

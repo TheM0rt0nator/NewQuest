@@ -126,6 +126,7 @@ local function updateObjective()
 
 	local state = player:GetAttribute("QuestState") or 0
 	objectiveLabel.Visible = not busy
+		and returnStatus ~= "Celebrating"
 		and player:GetAttribute("QuestDataReady") == true
 		and not (state >= 8 and state <= 21)
 end
@@ -154,8 +155,7 @@ local function playIntro()
 		and (
 			startingState == 2 and doctorIntroFinishedCharacter == player.Character
 			or (startingState == 4 or startingState == 5) and policeIntroFinishedCharacter == player.Character
-			or startingState == QuestConfig.States.FlightClassroom
-				and flightClassroomFinishedCharacter == player.Character
+			or startingState == QuestConfig.States.FlightClassroom and flightClassroomFinishedCharacter == player.Character
 			or startingState == 6 and finaleFinishedCharacter == player.Character
 		)
 	then
@@ -533,8 +533,7 @@ player:GetAttributeChangedSignal("QuestState"):Connect(function()
 			or state == 5
 			or state == 6
 			or state == QuestConfig.States.FlightClassroom
-		)
-		and not busy
+		) and not busy
 	then
 		task.spawn(function()
 			while busy do
