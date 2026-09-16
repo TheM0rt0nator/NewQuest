@@ -5,12 +5,25 @@ local QuestService = require(script.Parent.QuestService)
 local ChapterPlacement = require(script.Parent.ChapterPlacement)
 local QuestConfig = require(ReplicatedStorage.Modules.AnniversaryQuestConfig)
 local Config = require(ReplicatedStorage.Modules.DoctorQuestConfig)
+local QuestAnimations = require(ReplicatedStorage.Modules.QuestAnimations)
+local DoctorGrip = require(script.Parent.DoctorGrip)
+local DoctorPatient = require(script.Parent.DoctorPatient)
+local DoctorStaging = require(script.Parent.DoctorStaging)
 local DoctorProps = require(script.Parent.DoctorProps)
 
 local DoctorService = {}
 local stage
 local sessions = {}
 local heldItems = {}
+
+local TREATMENT_ANIMATIONS = {
+	Medicine = "GiveMedicine",
+	Scalpel = "UseScalpel",
+	Bandage = "ApplyBandage",
+	BloodBag = "ReplaceBloodBag",
+	Injection = "GiveInjection",
+	Shock = "UseDefibrillator",
+}
 
 local function nearby(player, position, distance)
 	local character = player.Character
@@ -51,27 +64,27 @@ local function showHeldItem(player)
 
 	local item = supply.Item:Clone()
 	item.Name = "DoctorHeldItem"
-	item:PivotTo(hand.CFrame * CFrame.new(0, -0.3, -0.35))
-
-	for _, part in item:GetDescendants() do
-		if part:IsA("BasePart") then
-			part.Anchored = false
-			part.CanCollide = false
-			part.CanQuery = false
-			part.Massless = true
-
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = hand
-			weld.Part1 = part
-			weld.Parent = part
-		end
-	end
-
-	item.Parent = character
+	DoctorGrip.Attach(item, character, supply.Name)
 	heldItems[player] = item
 end
 
 local function refresh(player)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	local state = player:GetAttribute("QuestState") or 0
+	local patientVisible = player:GetAttribute("QuestDataReady") == true
+		and player:GetAttribute("DoctorQuestEligible") == true
+		and state >= QuestConfig.States.DoctorIntro
+		and state <= QuestConfig.States.DoctorComplete
+		and humanoid ~= nil
+		and humanoid.Health > 0
+
+	if patientVisible then
+		DoctorPatient.Start(stage)
+	else
+		DoctorPatient.Stop()
+	end
+
 	local active = QuestService:IsActiveStep(player, QuestConfig.States.DoctorTasks)
 	local taskId = player:GetAttribute("DoctorTask")
 	local carrying = player:GetAttribute("DoctorCarrying") == true
@@ -95,6 +108,17 @@ local function release(player)
 
 	sessions[player] = nil
 
+	if session.endedConnection then
+		session.endedConnection:Disconnect()
+	end
+
+	if session.loadTimeout then
+		task.cancel(session.loadTimeout)
+		session.loadTimeout = nil
+	end
+
+	QuestAnimations.Stop(session.track)
+
 	if session.root.Parent then
 		session.root.Anchored = session.anchored
 	end
@@ -109,6 +133,10 @@ local function release(player)
 	player:SetAttribute("DoctorBusy", false)
 	player:SetAttribute("DoctorTreating", false)
 	refresh(player)
+
+	if session.finished then
+		session.finished:Fire()
+	end
 end
 
 local function lock(player, kind)
@@ -211,20 +239,36 @@ function DoctorService.Treat(player)
 	local taskId = player:GetAttribute("DoctorTask")
 	local progress = player:GetAttribute("QuestProgress")
 	local session = lock(player, "Treatment")
-	player.Character:PivotTo(stage.Markers.Treatment.CFrame)
+	session.finished = Instance.new("BindableEvent")
+	player.Character:PivotTo(DoctorStaging.GetTreatmentCFrame(stage, session.humanoid, taskId))
 
 	local ok, reason = xpcall(function()
-		local start = os.clock()
+		session.track = QuestAnimations.Play(session.humanoid, TREATMENT_ANIMATIONS[taskId])
+		assert(session.track, "Treatment animation could not be loaded")
+		session.endedConnection = session.track.Ended:Connect(function()
+			session.animationFinished = session.track.Length > 0
+			session.finished:Fire()
+		end)
 
-		while os.clock() - start < Config.TreatmentDuration do
-			if sessions[player] ~= session or session.humanoid.Health <= 0 then
-				return
+		-- Only time out failed loads; playback ends through AnimationTrack.Ended.
+		session.loadTimeout = task.delay(10, function()
+			session.loadTimeout = nil
+
+			if sessions[player] == session and session.track.Length == 0 then
+				warn("[DoctorQuest] Treatment animation failed to load:", taskId)
+				release(player)
 			end
+		end)
 
-			task.wait(0.15)
+		if sessions[player] == session and not session.animationFinished then
+			session.finished.Event:Wait()
 		end
 
-		if sessions[player] == session and session.humanoid.Health > 0 then
+		if
+			sessions[player] == session
+			and session.animationFinished
+			and session.humanoid.Health > 0
+		then
 			removeHeldItem(player)
 			QuestService:CompleteDoctorTask(player, taskId, progress)
 		end
@@ -235,17 +279,20 @@ function DoctorService.Treat(player)
 		showHeldItem(player)
 	end
 
+	session.finished:Destroy()
+
 	if not ok then
 		warn("[DoctorQuest]", reason)
 	end
 
-	return ok
+	return ok and session.animationFinished == true
 end
 
 function DoctorService.Start()
 	stage = workspace:WaitForChild("DoctorQuest", 15)
 	assert(stage, "Install the doctor room props first")
 	DoctorProps.Polish(stage)
+	DoctorStaging.Install(stage)
 	ReplicatedStorage.BeginDoctorIntro.OnServerInvoke = DoctorService.BeginIntro
 	ReplicatedStorage.EndDoctorIntro.OnServerEvent:Connect(DoctorService.EndIntro)
 
@@ -258,6 +305,14 @@ function DoctorService.Start()
 	stage.TreatmentPoint.Treat.Triggered:Connect(DoctorService.Treat)
 
 	local function resume(player)
+		local session = sessions[player]
+
+		if session and session.kind == "Treatment" then
+			if not QuestService:IsActiveStep(player, QuestConfig.States.DoctorTasks) then
+				release(player)
+			end
+		end
+
 		QuestService:PrepareDoctorRun(player)
 		showHeldItem(player)
 		refresh(player)
@@ -267,12 +322,16 @@ function DoctorService.Start()
 		player:GetAttributeChangedSignal("QuestDataReady"):Connect(function()
 			if player:GetAttribute("QuestDataReady") then
 				resume(player)
+			else
+				release(player)
+				DoctorPatient.Stop()
 			end
 		end)
 
 		player.CharacterRemoving:Connect(function()
 			release(player)
 			removeHeldItem(player)
+			DoctorPatient.Stop()
 		end)
 
 		local function characterAdded(character)
@@ -282,6 +341,7 @@ function DoctorService.Start()
 				humanoid.Died:Connect(function()
 					release(player)
 					removeHeldItem(player)
+					DoctorPatient.Stop()
 				end)
 			end
 
@@ -308,6 +368,7 @@ function DoctorService.Start()
 	Players.PlayerRemoving:Connect(function(player)
 		release(player)
 		removeHeldItem(player)
+		DoctorPatient.Stop()
 	end)
 
 	for _, player in Players:GetPlayers() do

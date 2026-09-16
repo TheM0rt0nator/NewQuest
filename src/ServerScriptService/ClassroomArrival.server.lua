@@ -4,6 +4,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local QuestConfig = require(ReplicatedStorage.Modules.AnniversaryQuestConfig)
+local QuestAnimations = require(ReplicatedStorage.Modules.QuestAnimations)
 local ClassroomSitting = require(script.Parent.ClassroomSitting)
 local ChapterPlacement = require(script.Parent.ChapterPlacement)
 local QuestService = require(script.Parent.QuestService)
@@ -35,6 +36,8 @@ end
 for _, actor in stage.Actors:GetChildren() do
 	if actor:GetAttribute("ClassroomSeat") then
 		ClassroomSitting.Play(actor.Humanoid)
+	elseif actor.Name == "MsTaylor" then
+		QuestAnimations.Play(actor.Humanoid, "TeacherIdle", true, Enum.AnimationPriority.Idle)
 	end
 end
 

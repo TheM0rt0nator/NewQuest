@@ -46,7 +46,7 @@ local function build()
 	local seats = workspace.HighSchool.Interactables.Seats.History
 	local description = Instance.new("HumanoidDescription")
 	local template =
-		Players:CreateHumanoidModelFromDescriptionAsync(description, Enum.HumanoidRigType.R6)
+		Players:CreateHumanoidModelFromDescriptionAsync(description, Enum.HumanoidRigType.R15)
 	local studentTemplate =
 		Players:CreateHumanoidModelFromDescriptionAsync(description, Enum.HumanoidRigType.R15)
 	description:Destroy()

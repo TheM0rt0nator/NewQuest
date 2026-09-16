@@ -19,7 +19,6 @@ highlight.Enabled = false
 highlight.Parent = stage
 
 local monitorConnection
-local gestureConnection
 local diedConnection
 local childConnection
 local character
@@ -28,22 +27,6 @@ local nextBeat = 0
 local lastBeat = 0
 local nextPaint = 0
 local currentState
-local gestureJoints = {}
-
-local function stopGesture()
-	if gestureConnection then
-		gestureConnection:Disconnect()
-		gestureConnection = nil
-	end
-
-	for _, joint in gestureJoints do
-		if joint.Parent then
-			joint.Transform = CFrame.identity
-		end
-	end
-
-	table.clear(gestureJoints)
-end
 
 local function stopMonitor()
 	if monitorConnection then
@@ -57,17 +40,6 @@ local function stopMonitor()
 	monitor:SetAttribute("WarningActive", false)
 	nextBeat = 0
 	nextPaint = 0
-end
-
-local function animateGesture()
-	local wave = math.sin(os.clock() * 3) * 12
-	local twist = player:GetAttribute("DoctorTask") == "Bandage" and wave or 0
-
-	for _, joint in gestureJoints do
-		if joint.Parent then
-			joint.Transform = CFrame.Angles(math.rad(65 + wave), 0, math.rad(twist))
-		end
-	end
 end
 
 local function updateMonitor()
@@ -121,7 +93,6 @@ local function refresh()
 
 	if not active then
 		stopMonitor()
-		stopGesture()
 
 		return
 	end
@@ -146,32 +117,10 @@ local function refresh()
 		or stage.Supplies:FindFirstChild(player:GetAttribute("DoctorTask") or "")
 	highlight.FillColor = color
 	highlight.OutlineColor = color
-
-	if state ~= 3 or not player:GetAttribute("DoctorTreating") then
-		stopGesture()
-
-		return
-	end
-
-	if gestureConnection then
-		return
-	end
-
-	for _, name in { "RightShoulder", "LeftShoulder", "Right Shoulder", "Left Shoulder" } do
-		local joint = character:FindFirstChild(name, true)
-
-		if joint and (joint:IsA("Motor6D") or joint:IsA("AnimationConstraint")) then
-			table.insert(gestureJoints, joint)
-		end
-	end
-
-	-- Apply the treatment pose after Animator evaluation, only during treatment.
-	gestureConnection = RunService.PreSimulation:Connect(animateGesture)
 end
 
 local function bindCharacter(newCharacter)
 	stopMonitor()
-	stopGesture()
 
 	if diedConnection then
 		diedConnection:Disconnect()

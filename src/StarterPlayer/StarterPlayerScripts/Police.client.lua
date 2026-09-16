@@ -630,7 +630,9 @@ local function refreshStage()
 		and humanoid ~= nil
 		and humanoid.Health > 0
 
-	if not active then
+	local scanning = active and player:GetAttribute("PoliceScanning") == true
+
+	if not active or scanning then
 		stopPose()
 
 		return
@@ -687,7 +689,7 @@ local function bindPoseCharacter(character)
 	refreshStage()
 end
 
-for _, attribute in { "QuestState", "QuestDataReady", "PoliceQuestEligible" } do
+for _, attribute in { "QuestState", "QuestDataReady", "PoliceQuestEligible", "PoliceScanning" } do
 	player:GetAttributeChangedSignal(attribute):Connect(refreshStage)
 end
 

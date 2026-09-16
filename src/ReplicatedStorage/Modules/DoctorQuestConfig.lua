@@ -33,7 +33,6 @@ local DoctorQuestConfig = {
 			Color = Color3.fromRGB(136, 175, 232),
 		},
 	},
-	TreatmentDuration = 2,
 	NormalBeatInterval = 0.85,
 	BeatIntervalIncrease = 0.28,
 	BeepSoundId = "rbxassetid://172905765",

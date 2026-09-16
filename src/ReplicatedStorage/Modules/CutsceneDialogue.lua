@@ -1,8 +1,39 @@
 -- Presents cutscene dialogue with the game's NPCChat artwork and controls.
 local StarterGui = game:GetService("StarterGui")
+local QuestAnimations = require(script.Parent.QuestAnimations)
 local QuestUISound = require(script.Parent.QuestUISound)
 
 local CutsceneDialogue = {}
+
+local function animateSpeaker(context, page)
+	local sceneId = context.Scene.Id
+
+	if not sceneId or not sceneId:find("Classroom") then
+		return function()
+			-- No classroom actor owns this dialogue page.
+		end
+	end
+
+	local stage = workspace:FindFirstChild("ClassroomIntro")
+	local actors = stage and stage:FindFirstChild("Actors")
+	local names = { ["MS TAYLOR"] = "MsTaylor", MAYA = "Maya", LEO = "Leo", AMIRA = "Amira" }
+	local actor = actors and actors:FindFirstChild(names[page.speaker] or "")
+	local humanoid = actor and actor:FindFirstChildOfClass("Humanoid")
+
+	if not humanoid then
+		return function() end
+	end
+
+	local teacher = page.speaker == "MS TAYLOR"
+	local selecting = teacher and (page.text:find("?", 1, true) ~= nil)
+	local name = teacher and (selecting and "TeacherSelecting" or "TeacherTalking")
+		or "StudentAnswering"
+	local track = QuestAnimations.Play(humanoid, name, not selecting)
+
+	return context:Defer(function()
+		QuestAnimations.Stop(track)
+	end)
+end
 
 local function createInterface(context)
 	local template = StarterGui:FindFirstChild("NPCChat", true)
@@ -57,6 +88,7 @@ function CutsceneDialogue.Play(context, pages)
 
 	for _, page in pages do
 		context:Check()
+		local stopAnimation = animateSpeaker(context, page)
 		interface.speaker.Text = page.speaker
 		interface.text.Text = page.text
 		interface.text.MaxVisibleGraphemes = 0
@@ -95,6 +127,7 @@ function CutsceneDialogue.Play(context, pages)
 		end
 
 		disconnect()
+		stopAnimation()
 	end
 
 	interface.panel.Visible = false

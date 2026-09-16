@@ -8,6 +8,7 @@ local QuestService = require(script.Parent.QuestService)
 local ChapterPlacement = require(script.Parent.ChapterPlacement)
 local QuestConfig = require(ReplicatedStorage.Modules.AnniversaryQuestConfig)
 local Config = require(ReplicatedStorage.Modules.PoliceQuestConfig)
+local QuestAnimations = require(ReplicatedStorage.Modules.QuestAnimations)
 local PoliceEvidence = require(ReplicatedStorage.Modules.PoliceEvidence)
 
 local PoliceService = {}
@@ -115,6 +116,8 @@ local function release(player)
 
 	local previous = session
 	session = nil
+	QuestAnimations.Stop(previous.scanTrack)
+	player:SetAttribute("PoliceScanning", false)
 
 	for part, group in previous.collisionGroups do
 		if part.Parent then
@@ -458,7 +461,33 @@ function PoliceService.Action(player, action, value)
 
 		local current = session
 		current.processing = true
-		task.wait(action == "Scan" and Config.ScanDuration or Config.PhotoDuration)
+		local duration = action == "Scan" and Config.ScanDuration or Config.PhotoDuration
+
+		if action == "Scan" then
+			player:SetAttribute("PoliceScanning", true)
+			current.scanTrack = QuestAnimations.Play(stage.Suspect.Humanoid, "FingerprintScan")
+			local deadline = os.clock() + 3
+
+			while current.scanTrack and current.scanTrack.Length == 0 and os.clock() < deadline do
+				if session ~= current then
+					return false
+				end
+
+				task.wait(0.05)
+			end
+
+			if session ~= current then
+				return false
+			end
+
+			if current.scanTrack and current.scanTrack.Length > 0 then
+				duration = math.max(duration, current.scanTrack.Length)
+				current.scanTrack.TimePosition = 0
+				current.scanTrack:AdjustSpeed(current.scanTrack.Length / duration)
+			end
+		end
+
+		task.wait(duration)
 
 		if session ~= current or current.humanoid.Health <= 0 then
 			return false

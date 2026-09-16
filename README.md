@@ -45,9 +45,10 @@ the original bed. The hospital itself is preserved.
 After a short patient cutscene, collect the item named in the UI with its prompt,
 then return to the patient and use the treatment prompt. Medicine, shock, scalpel,
 bandage, blood bag, and injection each appear once, with Shock kept last. Each
-treatment plays an eight-second arm gesture; six treatments plus collecting and
-walking are intended to take roughly one to two minutes. The current destination
-is highlighted and the held item is visible in the player's hand.
+treatment plays its dedicated R15 animation at normal speed and releases the
+player on `AnimationTrack.Ended`, with no fixed treatment duration; six
+treatments plus collecting and walking take roughly one to two minutes. The current
+destination is highlighted and the held item is visible in the player's hand.
 
 The monitor beeps more slowly after each treatment. At five of six treatments
 (the first whole-task checkpoint at or above 75%), it flashes red. After the sixth,
@@ -63,9 +64,14 @@ a native backup in `assets/DoctorToolTemplates.rbxm`. Scalpel, syringe, and bloo
 bag details are built from parts. The care board is removed in favour of the UI.
 
 `DoctorQuestConfig.lua` defines the tasks, timings, colours, warning threshold, and
-beep asset. The treatment gesture supports both Motor6D and AnimationConstraint
-avatars using client-side Transform evaluation after the Animator, following
-[Roblox's AnimationConstraint guidance](https://create.roblox.com/docs/reference/engine/classes/AnimationConstraint).
+beep asset. `QuestAnimations.lua` contains the animation IDs. `DoctorGrip.lua`
+attaches each tool at its handle, with one defibrillator paddle per hand.
+`DoctorStaging.lua` provides raised medical steps and calculates standing height
+from the avatar's HipHeight. Blood-bag replacement uses a separate position facing
+the infusion pump; the other treatments face the bed.
+`DoctorPatient.lua` plays MQ's `Seat_HospitalBed` (`9609654502`) during the
+doctor chapter, with an upright root so the clip supplies the reclining pose.
+Leaving the chapter or removing the character stops the track.
 Pickup and treatment use [proximity prompts](https://create.roblox.com/docs/ui/proximity-prompts)
 with server checks for the current task, held item, distance, and character state.
 
@@ -117,7 +123,10 @@ Police props reuse MQ's `Resources.Tools.Phone`, `CarKeys`, `Walkie`, and `Cuffs
 visuals, stored in `ServerStorage.PolicePropTemplates` with XML and native backups
 in the repository. The rigid cuff tool is displayed on the scanner's equipment
 shelf; fitted part cuffs and decorative chain links follow the suspect's existing
-wrist pose. Wallet stitching, lockpick grips, and watch markings use parts.
+wrist pose. During fingerprint scanning, the cuff pose override is suspended so
+the animation controls the arms while the cuffs remain attached and visible.
+The pose override resumes when scanning ends or is cancelled. Wallet stitching,
+lockpick grips, and watch markings use parts.
 `PoliceProps.lua` adds the scanner casing, glass, fingerprint graphic, status
 lights, and pedestal without changing scan timing or animations.
 
@@ -260,10 +269,14 @@ Persistent streaming mode; the client also requests the classroom area before
 showing the scene. The original disabled school seats are untouched. A temporary
 server seat seats the player and is removed afterward.
 
-The six student NPCs use R15 rigs. They and the player use the looping sitting pose
-`rbxassetid://134259979568724`, configured in `ClassroomSitting.lua`. The player must
+The teacher and six student NPCs use R15 rigs. Students and the player use the
+looping sitting pose
+`rbxassetid://138156471015728`, configured in `ClassroomSitting.lua`. The player must
 use R15 for this animation. Their sitting track is stopped when the seating session
-ends; the students keep their pose and Ms Taylor remains standing.
+ends; the students keep their pose and Ms Taylor plays her standing idle.
+Dialogue triggers teacher talking/selecting and student answering animations.
+`tools/ConvertQuestTeacherToR15.lua` upgrades the existing teacher without
+rebuilding the classroom.
 
 The map and classroom cast are managed in Studio. Save the place there. The
 repository is not a backup of the full map. `tools/BuildClassroom.lua` contains the
