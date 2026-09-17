@@ -248,7 +248,20 @@ return function()
 		assert(QuestService:CompleteFinale(player), "Finale did not complete")
 		assert(not QuestService:CompleteFinale(player), "Duplicate finale was accepted")
 		QuestReturnService.Return(player)
-		assert(attributes.QuestBadgeStatus == "StudioSkipped", "Studio attempted a live badge award")
+		assert(
+			attributes.QuestBadgeStatus == "StudioSkipped",
+			"Studio attempted a live badge award"
+		)
+		assert(
+			attributes.QuestReturnStatus == "Celebrating",
+			"Completion celebration did not start"
+		)
+		QuestReturnService.Return(player, "CelebrationFinished")
+		assert(attributes.QuestReturnStatus == "Celebrating", "Celebration finished too early")
+		task.wait(
+			require(game.ReplicatedStorage.Modules.AnniversaryQuestConfig).CompletionCelebrationDuration
+		)
+		QuestReturnService.Return(player, "CelebrationFinished")
 		assert(attributes.QuestReturnStatus == "StudioComplete", "Studio completion did not finish")
 		QuestService:RemovePlayer(player)
 		assert(QuestService:LoadPlayer(player), "Completed quest did not reload")

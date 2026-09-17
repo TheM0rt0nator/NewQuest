@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local PhysicsService = game:GetService("PhysicsService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -189,13 +190,18 @@ end
 local function setCell(open, animate)
 	local door = stage.CellDoor.Value
 	local destination = open and doorClosed * CFrame.Angles(0, math.rad(-85), 0) or doorClosed
+	if door:GetAttribute("IsOpen") == open and door:GetAttribute("CellDoorMotion") then
+		return
+	end
 
 	-- Replicate the endpoint once; the client animates its local door model.
 	door:PivotTo(destination)
-	door:SetAttribute("CellDoorDuration", animate and 0.8 or 0)
-	door:SetAttribute("CellDoorTarget", destination)
 	door:SetAttribute("IsOpen", open)
-	door:SetAttribute("CellDoorRevision", (door:GetAttribute("CellDoorRevision") or 0) + 1)
+	-- One replicated value keeps the destination and duration together.
+	door:SetAttribute("CellDoorMotion", HttpService:JSONEncode({
+		Target = { destination:GetComponents() },
+		Duration = animate and 0.8 or 0,
+	}))
 
 	if animate then
 		task.wait(0.8)

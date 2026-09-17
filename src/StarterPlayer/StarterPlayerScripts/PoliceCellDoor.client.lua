@@ -1,3 +1,4 @@
+local HttpService = game:GetService("HttpService")
 local TweenService = game:GetService("TweenService")
 
 local stage = workspace:WaitForChild("PoliceQuest")
@@ -8,6 +9,17 @@ while not doorReference.Value do
 end
 
 local door = doorReference.Value
+
+local function readMotion()
+	local encoded = door:GetAttribute("CellDoorMotion")
+	if not encoded then
+		return nil
+	end
+
+	local motion = HttpService:JSONDecode(encoded)
+	return CFrame.new(table.unpack(motion.Target)), motion.Duration
+end
+
 local visual = door:Clone()
 visual.Name = "PoliceCellDoorVisual"
 
@@ -20,7 +32,7 @@ for _, object in visual:GetDescendants() do
 	end
 end
 
-visual:PivotTo(door:GetAttribute("CellDoorTarget") or door:GetPivot())
+visual:PivotTo(readMotion() or door:GetPivot())
 visual.Parent = workspace
 
 local originals = {}
@@ -65,8 +77,7 @@ end
 local function updateDoor()
 	stopAnimation()
 
-	local destination = door:GetAttribute("CellDoorTarget")
-	local duration = door:GetAttribute("CellDoorDuration") or 0
+	local destination, duration = readMotion()
 
 	if not destination then
 		return
@@ -82,7 +93,11 @@ local function updateDoor()
 	changedConnection = value.Changed:Connect(function(transform)
 		visual:PivotTo(transform)
 	end)
-	animation = TweenService:Create(value, TweenInfo.new(duration), { Value = destination })
+	animation = TweenService:Create(
+		value,
+		TweenInfo.new(duration, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+		{ Value = destination }
+	)
 	completedConnection = animation.Completed:Connect(function()
 		visual:PivotTo(destination)
 		stopAnimation()
@@ -90,7 +105,7 @@ local function updateDoor()
 	animation:Play()
 end
 
-local revisionConnection = door:GetAttributeChangedSignal("CellDoorRevision"):Connect(updateDoor)
+local revisionConnection = door:GetAttributeChangedSignal("CellDoorMotion"):Connect(updateDoor)
 local destroyConnection
 local closed = false
 

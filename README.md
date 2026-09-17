@@ -1,11 +1,15 @@
 # NewQuest
 
 Single-player anniversary quest destination, designed to run in the same Roblox
-universe as Berry Avenue. Connected development target: **Anniversary Quest**, place
-133860577693306.
+universe as Berry Avenue. Production target: **Anniversary Quest**, place
+**71485985593556**, in Berry Avenue universe **3240075297**. The separate
+development copy is **133860577693306**.
 
 The quest runs in the current place without hardcoding its own destination ID.
-Any external entrance teleport should target **133860577693306**. The separate
+Any production entrance teleport should target **71485985593556** and set
+`TeleportOptions.ShouldReserveServer = true` for a separate session per player.
+Set the destination place's maximum player count to **1** before release as well.
+The separate
 `AnniversaryQuestConfig.ReturnPlaceId` remains **8481844229**, the Berry Avenue
 return destination.
 
@@ -155,7 +159,7 @@ This prop pass adds no intercom handset, passenger tray tables, animations, or s
 
 ## Shared quest data
 
-Completing the final classroom scene awards badge **3360234962904323** before
+Completing the final classroom scene awards badge **4082518353991699** before
 returning to Berry Avenue. `BadgeService.lua` checks ownership and retries failed
 Roblox requests up to three times. The return handler saves completion first and
 offers a retry if the badge cannot be awarded; completed players who rejoin use

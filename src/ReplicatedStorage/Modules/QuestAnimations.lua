@@ -6,6 +6,7 @@ local IDS = {
 	TeacherTalking = "rbxassetid://92807885382082",
 	TeacherSelecting = "rbxassetid://76245653184812",
 	StudentSeatIdle = "rbxassetid://138156471015728",
+	FlightSeatBase = "rbxassetid://134259979568724",
 	StudentAnswering = "rbxassetid://126768933512973",
 	GiveMedicine = "rbxassetid://99777863176016",
 	UseScalpel = "rbxassetid://79249944852722",

@@ -2,7 +2,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local ChapterPlacement = require(script.Parent.ChapterPlacement)
-local ClassroomSitting = require(script.Parent.ClassroomSitting)
+local FlightSitting = require(script.Parent.FlightSitting)
 local Config = require(ReplicatedStorage.Modules.FlightQuestConfig)
 local FlightMeals = require(ReplicatedStorage.Modules.FlightMeals)
 local FlightProps = require(script.Parent.FlightProps)
@@ -117,7 +117,7 @@ local function refresh(player)
 		end
 
 		if active and not passengerTracks[model] then
-			passengerTracks[model] = ClassroomSitting.Play(model.Humanoid)
+			passengerTracks[model] = FlightSitting.Play(model.Humanoid)
 		elseif not active and passengerTracks[model] then
 			passengerTracks[model]:Stop(0)
 			passengerTracks[model]:Destroy()
@@ -170,7 +170,7 @@ local function beginScene(player, state)
 		root.Anchored = false
 		character:PivotTo(seat.CFrame * CFrame.new(0, 2, 0))
 		seat:Sit(humanoid)
-		current.track = ClassroomSitting.Play(humanoid)
+		current.track = FlightSitting.Play(humanoid)
 	else
 		root.Anchored = true
 	end
