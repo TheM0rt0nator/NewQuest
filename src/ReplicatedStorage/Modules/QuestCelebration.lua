@@ -81,11 +81,12 @@ local function label(parent, name, content, y, height, color, maxSize)
 	return object
 end
 
-function QuestCelebration.Play(playerGui, onFinished)
+function QuestCelebration.Play(playerGui, onFinished, options)
 	if active then
 		return active.Stop
 	end
 
+	options = options or {}
 	local session = { Tweens = {}, Particles = {}, Sounds = {}, Closed = false }
 	active = session
 
@@ -135,7 +136,8 @@ function QuestCelebration.Play(playerGui, onFinished)
 	header.ZIndex = 11
 	border(header, 3)
 
-	local heading = label(header, "Heading", "ANNIVERSARY ADVENTURE", 0.15, 0.7, INK, 25)
+	local heading =
+		label(header, "Heading", options.Heading or "ANNIVERSARY ADVENTURE", 0.15, 0.7, INK, 25)
 	heading.BackgroundColor3 = Color3.new(1, 1, 1)
 	heading.BackgroundTransparency = 0
 	border(heading, 2)
@@ -156,7 +158,15 @@ function QuestCelebration.Play(playerGui, onFinished)
 	logo.Parent = inset
 
 	label(inset, "Title", "QUEST COMPLETE!", 0.29, 0.2, INK, 42)
-	label(inset, "Message", "Every great future starts with a dream.", 0.54, 0.14, INK, 20)
+	label(
+		inset,
+		"Message",
+		options.Message or "Every great future starts with a dream.",
+		0.54,
+		0.14,
+		INK,
+		20
+	)
 
 	local reward = label(inset, "Reward", "YOU DID IT!", 0.76, 0.15, INK, 22)
 	reward.Size = UDim2.fromScale(0.5, 0.15)
@@ -164,7 +174,7 @@ function QuestCelebration.Play(playerGui, onFinished)
 	reward.BackgroundTransparency = 0
 	border(reward, 2)
 
-	label(card, "Return", "Returning to Berry Avenue...", 0.85, 0.06, INK, 17)
+	label(card, "Return", options.ReturnText or "Returning to Berry Avenue...", 0.85, 0.06, INK, 17)
 
 	local track = frame(
 		card,

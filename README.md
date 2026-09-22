@@ -1,5 +1,9 @@
 # NewQuest
 
+The classic-map secret quest has its own **Secret** place setup and
+`secret.project.json`. See [the Secret quest guide](docs/secret-quest.md) for its
+route, privacy hardening, installation and Studio mock testing.
+
 Single-player anniversary quest destination, designed to run in the same Roblox
 universe as Berry Avenue. Production target: **Anniversary Quest**, place
 **71485985593556**, in Berry Avenue universe **3240075297**. The separate
