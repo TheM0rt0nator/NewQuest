@@ -10,7 +10,7 @@ local SafeTeleport = require(Knit.Modules.SafeTeleport)
 local SecretQuestCarry = require(script.Parent.Parent.SecretQuestCarry)
 local SecretQuestAccess = require(script.Parent.Parent.SecretQuestAccess)
 
-local Bindings = require(script.Parent.Parent.SecretQuestBindings)
+local Presentation = require(script.Parent.Parent.SecretQuestPresentation)
 
 local SecretQuest = {}
 SecretQuest.__index = SecretQuest
@@ -66,7 +66,7 @@ function SecretQuest:Notify(message)
 	end
 end
 
-function SecretQuest:Collect(itemId)
+function SecretQuest:Collect(itemId, stillValid)
 	if not SecretQuestAccess.IsAvailable(self.Player) then
 		return false
 	end
@@ -94,7 +94,7 @@ function SecretQuest:Collect(itemId)
 	end
 
 	local savedQuest = data.Quests and data.Quests.SecretQuest
-	if not savedQuest or not savedQuest.Active then
+	if not savedQuest or not savedQuest.Active or not stillValid or not stillValid() then
 		return false
 	end
 
@@ -106,7 +106,6 @@ function SecretQuest:Collect(itemId)
 
 	savedQuest.State = self.State
 	self.Carry:SetState(self.State)
-	Knit.GetService("QuestService").Client.QuestUpdated:Fire(self.Player, "SecretQuest", self.State)
 	self:Notify("Collected " .. itemConfig.DisplayName .. "!")
 	return true
 end
@@ -131,7 +130,7 @@ function SecretQuest:ReleaseTeleport(attempt, message)
 	end
 end
 
-function SecretQuest:Travel(prompt)
+function SecretQuest:Travel(stillValid)
 	if
 		self.Destroyed
 		or self.State.Id ~= 2
@@ -148,27 +147,16 @@ function SecretQuest:Travel(prompt)
 		end
 	end
 
-	local tree = Bindings.Tree
-	local treePrompt = Bindings.TreePrompt
-	local player = self.Player
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	if
-		not treePrompt
-		or prompt ~= treePrompt
-		or not prompt.Enabled
-		or player.Parent ~= Players
-		or not root
-		or not humanoid
-		or humanoid.Health <= 0
-		or (root.Position - tree.Position).Magnitude > prompt.MaxActivationDistance + 2
-	then
+	if not stillValid or not stillValid() then
 		return
 	end
 
+	local player = self.Player
 	self.NextTeleportAttempt = os.clock() + 3
-	local placeId = Config.DestinationPlaceId
+	local placeId = Config.GetDestinationPlaceId()
+	if not placeId then
+		return
+	end
 	if RunService:IsStudio() then
 		print(
 			("[SecretQuest] Studio preview: %s would teleport to place %d."):format(
@@ -220,11 +208,15 @@ function SecretQuest:Travel(prompt)
 	end
 end
 
-function SecretQuest:InteractWithTree(prompt)
+function SecretQuest:InteractWithTree(stillValid)
 	local service = Knit.GetService("QuestService")
-	service.Client.QuestReceived:Fire(self.Player, "SecretQuest", self.State)
+	service.Client.QuestReceived:Fire(
+		self.Player,
+		"SecretQuest",
+		Presentation.State("SecretQuest", self.State)
+	)
 	if self.State.Id == 2 then
-		self:Travel(prompt)
+		self:Travel(stillValid)
 	end
 end
 

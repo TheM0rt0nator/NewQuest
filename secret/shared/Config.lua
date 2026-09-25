@@ -1,3 +1,4 @@
 return {
-	PlaceId = 78518778092310,
+	PlaceId = 93796111143212,
+	TestPlaceId = 78518778092310,
 }

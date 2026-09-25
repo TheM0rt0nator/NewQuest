@@ -3,7 +3,10 @@ $projectRoot = Split-Path -Parent $PSScriptRoot
 $outputPath = Join-Path $projectRoot 'build/InstallSecretQuest.lua'
 $builder = [System.Text.StringBuilder]::new()
 [void]$builder.AppendLine(@'
-assert(game.PlaceId == 78518778092310, "Install only in the Secret place")
+assert(
+	game.PlaceId == 78518778092310 or game.PlaceId == 93796111143212,
+	"Install only in a Secret quest destination"
+)
 assert(not game:GetService("RunService"):IsRunning(), "Stop the playtest first")
 
 local backup = Instance.new("Folder")

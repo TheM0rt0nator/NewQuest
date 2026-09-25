@@ -14,6 +14,7 @@ local Promise = require(ReplicatedStorage.Packages.Promise)
 local AnniversaryRelease = require(script.AnniversaryRelease)
 local SecretQuestEntrance = require(script.SecretQuestEntrance)
 local SecretQuestAccess = require(script.SecretQuestAccess)
+local Presentation = require(script.SecretQuestPresentation)
 
 local QuestService = Knit.CreateService({
 	Name = "QuestService",
@@ -117,7 +118,7 @@ function QuestService.AwardCompletionBadge(player, badgeId)
 	end)
 end
 
-function QuestService:GiveQuest(player, questName)
+function QuestService:GiveQuest(player, questName, canGrant)
 	if questName == "SecretQuest" and not SecretQuestAccess.IsAvailable(player) then
 		return nil
 	end
@@ -137,6 +138,12 @@ function QuestService:GiveQuest(player, questName)
 	return PlayerService:GetPlayerData(player):andThen(function(data)
 		if player.Parent ~= Players then
 			return
+		end
+
+		if questName == "SecretQuest" then
+			if not SecretQuestAccess.IsAvailable(player) or (canGrant and not canGrant()) then
+				return
+			end
 		end
 
 		self:PrepareSecretQuestSession(player, data)
@@ -172,7 +179,7 @@ function QuestService:GiveQuest(player, questName)
 		self.Client.QuestReceived:Fire(
 			player,
 			questName,
-			self.PlayerQuests[player][questName].State
+			Presentation.State(questName, self.PlayerQuests[player][questName].State)
 		)
 	end)
 end
@@ -318,7 +325,7 @@ function QuestService:SetState(player, questName, newState)
 	end
 
 	quest:SetState(newState)
-	self.Client.QuestUpdated:Fire(player, questName, quest.State)
+	self.Client.QuestUpdated:Fire(player, questName, Presentation.State(questName, quest.State))
 
 	PlayerService:GetPlayerData(player):andThen(function(data)
 		if not data.Quests or not data.Quests[questName] then
@@ -394,7 +401,7 @@ function QuestService:UpdateProgress(player, questName, newProgress, disableSave
 			:await()
 	end
 
-	self.Client.QuestUpdated:Fire(player, questName, quest.State)
+	self.Client.QuestUpdated:Fire(player, questName, Presentation.State(questName, quest.State))
 
 	return true
 end
@@ -571,15 +578,21 @@ function QuestService.Client:GiveQuest(player, questName)
 end
 
 function QuestService.Client:GetActiveQuests(player)
-	return self.Server:GetActiveQuests(player)
+	local quests = self.Server:GetActiveQuests(player)
+	for name, data in quests do
+		quests[name] = Presentation.Data(name, data)
+	end
+
+	return quests
 end
 
 function QuestService.Client:GetCurrentQuest(player)
-	return self.Server:GetCurrentQuest(player)
+	local name, data = self.Server:GetCurrentQuest(player)
+	return name, Presentation.Data(name, data)
 end
 
 function QuestService.Client:GetQuestData(player, questName)
-	return self.Server:GetQuestData(player, questName)
+	return Presentation.Data(questName, self.Server:GetQuestData(player, questName))
 end
 
 function QuestService.Client:CompleteCurrentQuest(player, questName)
@@ -616,7 +629,11 @@ function QuestService:ResumeSecretQuest(player)
 			local quest = require(QUESTS.SecretQuest).new(player, saved)
 			quests.SecretQuest = quest
 			quest:StateSet(quest.State, true)
-			self.Client.QuestReceived:Fire(player, "SecretQuest", quest.State)
+			self.Client.QuestReceived:Fire(
+				player,
+				"SecretQuest",
+				Presentation.State("SecretQuest", quest.State)
+			)
 		end)
 		:catch(warn)
 end

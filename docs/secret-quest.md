@@ -1,6 +1,7 @@
 # Secret quest: classic destination
 
-The destination is **Secret**, place **78518778092310**. This handles the adventure
+The production destination is **93796111143212**; the **Secret** test place is
+**78518778092310**. The same source supports both IDs. This handles the adventure
 after teleporting through the tree. The Berry Avenue three-item entrance remains
 separate. The anniversary source and project are preserved; nothing is published.
 
@@ -116,7 +117,7 @@ Use **secret.project.json**, not default.project.json.
 The main files are:
 
 - secret/server/Config.lua: private answers, route, coordinates, badge/return IDs.
-- secret/shared/Config.lua: only the current place ID for the client entry point.
+- secret/shared/Config.lua: only the two supported IDs for the client entry point.
 - secret/shared/AnniversaryQuestConfig.lua: only completion presentation settings.
 - secret/server/PrivateState.lua: private references and original map properties.
 - secret/server/World.lua: scene setup, original mannequin references and locks.
@@ -169,18 +170,28 @@ completion, saving and badge state; client appearance changes cannot grant those
 
 ## Data and release
 
+Production opens once, on **23 September 2026 at 20:00 BST / 19:00 UTC**
+(**1790190000**). The server bootstrap checks its own clock before requiring or
+starting the quest service. Early arrivals are kicked with the opening time, so
+no quest profile is loaded and no generated puzzle props are revealed. One
+scheduled callback opens an already-running server at release; it rechecks the
+clock and disconnects the early-arrival handler. The test destination bypasses
+this gate. Production follows the gate in Studio too. Publishing the updated
+open Secret place to the production ID carries this protection with it.
+
 The current test destination **78518778092310** always starts a fresh quest on
 each join, including published test servers. It uses **ProfileStore.Mock** and
 replaces the loaded mock progress with a new quest, so both incomplete and
 completed test runs reset. Existing persistent saves are not read or overwritten.
 Respawning within the same session keeps the current attempt.
 
-**Config.TestPlaceId** identifies this test destination independently of
-**Config.PlaceId**, which controls where the quest scripts run. When the production
-place is created, update **PlaceId** in both server and minimal shared configs to
-its ID and leave the server's **TestPlaceId** unchanged.
-Production servers then resume and save progress normally. No production place ID
-is needed to enable the test reset now.
+**Config.PlaceId = 93796111143212** identifies production. Its published servers
+resume and save progress normally, including completed quests. Both the client
+and server entry points accept production and **Config.TestPlaceId = 78518778092310**.
+Publishing the open test place to the production ID requires no source edits:
+the server selects its reset, storage and badge policy from the actual place ID.
+MQ's existing private routing sends its test entrance to **78518778092310** and
+the main Berry Avenue entrance to **93796111143212**; its scheduled release is preserved.
 
 Progress uses **SecretQuest_Classic_v1**, key Player_<UserId>, independently of
 Berry Avenue and anniversary profiles. Save schema version 3 migrates the earlier
@@ -195,7 +206,8 @@ attribute. The library's generic API-availability log does not mean live data is
 being used. Completion saves mock data and simulates badge/teleport.
 **SecretResetOnJoin** records whether the test-place reset policy is active.
 
-CompletionBadgeId is configured to the test badge **4162590358506538**. Players
+CompletionBadgeId selects **2308865322054249** in production and the test badge
+**4162590358506538** in the test destination. Players
 claim it by entering the return portal after completing all four puzzles.
 Before release, set maximum players to 1 and use a reserved server for the entrance teleport.
 The return destination remains **8481844229**. Live completion confirms the save,
@@ -294,3 +306,18 @@ player progress attributes were absent. Completion cleaned up the celebration
 GUI. Repeated Stop/Start calls passed, the test place reset to stage 1, later
 props and the portal returned to private storage, and all static world parts
 remained anchored. Badge awards and teleports were simulated in Studio.
+
+The September 23 place configuration passed **tools/TestSecretPlacePolicy.lua**:
+14 checks covering both badge selections, partial/completed progress preservation,
+test resets, mock storage in Studio, live storage selection in published production,
+and both client/server entry-point guards. The checks execute the real selection
+and reset branches with fake storage; they never access live player data.
+Three additional checks confirmed MQ/main/unsupported entrance routing. A fresh
+test-place play session confirmed normal startup, mock storage and reset enabled.
+Actual production saving and badge awards require a published Roblox session.
+
+**tools/TestSecretRelease.lua** passed checks against the installed bootstrap for
+existing and new early arrivals, no service loading before release, an early
+timer callback, opening exactly at the boundary, remaining open afterward,
+test-place bypass, unsupported places and cancellation on script destruction.
+The 14 production/test place-policy checks also still pass.

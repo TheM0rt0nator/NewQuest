@@ -1,9 +1,9 @@
 local Config = {
-	PlaceId = 78518778092310,
-	-- Keep this ID when PlaceId changes to the future production destination.
+	PlaceId = 93796111143212,
 	TestPlaceId = 78518778092310,
+	-- 23 September 2026 at 20:00 BST (19:00 UTC).
+	OpensAt = 1790190000,
 	ReturnPlaceId = 8481844229,
-	CompletionBadgeId = 4162590358506538,
 	StoreName = "SecretQuest_Classic_v1",
 	WorldVersion = 16,
 	VipTShirtId = 17578965036,
@@ -79,5 +79,8 @@ local Config = {
 		},
 	},
 }
+
+Config.CompletionBadgeId = game.PlaceId == Config.TestPlaceId and 4162590358506538
+	or 2308865322054249
 
 return Config

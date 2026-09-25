@@ -10,6 +10,7 @@ alwaysApply: true
 - Expand function bodies and conditional blocks across lines. Separate logical groups with one blank line.
 - Leave a blank line after completed guards, loops, functions, and callbacks before the next statement. Keep nested closing lines (`end`, `end)`, `}`, etc.) together.
 - Separate declarations, UI object setup, and other logical sections with blank lines. Preserve this spacing when formatting; do not rely on indentation alone for readability.
+- Use Selene to keep code clean: run `selene src` after every change. New and changed code must have no Selene errors or warnings. Fix the cause instead of silencing it; if a rule really must be ignored, use an inline `-- selene: allow(rule_name)` on the smallest scope with a comment explaining why.
 - Do not commit or push unless the user explicitly asks again. The user handles Git manually.
 - The production Anniversary Quest place is 71485985593556; 133860577693306 is the development copy. Target the place requested for the task, preserve its map, and do not modify BA Staging 1.
 - Do not publish Roblox places unless explicitly requested.

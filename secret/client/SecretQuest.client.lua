@@ -9,7 +9,7 @@ local QuestCelebration = require(shared:WaitForChild("QuestCelebration"))
 local CelebrationConfig = require(shared:WaitForChild("AnniversaryQuestConfig"))
 local celebrationFinished = shared:WaitForChild("CelebrationFinished")
 
-if game.PlaceId ~= Config.PlaceId then
+if game.PlaceId ~= Config.PlaceId and game.PlaceId ~= Config.TestPlaceId then
 	return
 end
 

@@ -1,65 +1,83 @@
 local Players = game:GetService("Players")
-local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local SecretQuestAccess = require(script.Parent.SecretQuestAccess)
-
 local Bindings = require(script.Parent.SecretQuestBindings)
+local SecretQuestAccess = require(script.Parent.SecretQuestAccess)
+local SecretQuestRelease = require(script.Parent.SecretQuestRelease)
 
 local SecretQuestEntrance = {}
 local connections = {}
-local busyPlayers = {}
-local nextInteractions = {}
 local playerConnections = {}
-
-local function canInteract(player, prompt)
-	local binding = Bindings.Get(prompt)
-	if
-		not SecretQuestAccess.IsAvailable(player)
-		or not binding
-		or not prompt.Enabled
-		or prompt.Parent ~= binding.Anchor
-	then
-		return false
-	end
-
-	local anchor = prompt.Parent
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart")
-	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-	return player.Parent == Players
-		and anchor
-		and anchor:IsA("BasePart")
-		and root
-		and humanoid
-		and humanoid.Health > 0
-		and (root.Position - anchor.Position).Magnitude <= prompt.MaxActivationDistance + 2
-end
+local unregister = {}
+local started = false
 
 function SecretQuestEntrance.Start(questService)
-	if #connections > 0 or not SecretQuestAccess.IsEntrance() then
+	if started or not SecretQuestAccess.IsEntrance() then
 		return
 	end
 
-	local trunk = Bindings.Trunk
-	local anchor = Bindings.Tree
-	if trunk and trunk:IsA("BasePart") and anchor and anchor:IsA("BasePart") then
-		local function alignTreePrompt()
-			anchor.CFrame = trunk.CFrame * CFrame.new(0, -trunk.Size.Y / 2 + 3, 0)
-		end
+	started = true
+	local interactions = Knit.GetService("NearbyInteractionService")
+	for _, binding in Bindings.GetEntries() do
+		table.insert(
+			unregister,
+			interactions:Register({
+				Distance = 8,
+				GetPosition = binding.GetPosition,
+				IsAvailable = function(player)
+					if not SecretQuestAccess.IsAvailable(player) then
+						return false
+					end
 
-		alignTreePrompt()
-		table.insert(connections, trunk:GetPropertyChangedSignal("CFrame"):Connect(alignTreePrompt))
-		table.insert(connections, trunk:GetPropertyChangedSignal("Size"):Connect(alignTreePrompt))
+					if not binding.ItemId then
+						return true
+					end
+
+					local quests = questService.PlayerQuests[player]
+					local quest = quests and quests.SecretQuest
+					return quest ~= nil
+						and not quest.Destroyed
+						and quest.State.Id == 1
+						and not quest.State.Collected[binding.ItemId]
+				end,
+				Activate = function(player, stillValid)
+					local quests = questService.PlayerQuests[player]
+					local quest = quests and quests.SecretQuest
+					if binding.ItemId then
+						if quest then
+							quest:Collect(binding.ItemId, stillValid)
+						end
+
+						return
+					end
+
+					if not quest then
+						local request = questService:GiveQuest(player, "SecretQuest", stillValid)
+						if request then
+							request:await()
+						end
+
+						quests = questService.PlayerQuests[player]
+						quest = quests and quests.SecretQuest
+					end
+
+					if quest and stillValid() then
+						quest:InteractWithTree(stillValid)
+					end
+				end,
+			})
+		)
 	end
 
 	local function watchPlayer(player)
-		player:SetAttribute("SecretQuestAvailable", SecretQuestAccess.IsAvailable(player))
+		if playerConnections[player] then
+			return
+		end
+
 		playerConnections[player] = player
 			:GetAttributeChangedSignal("AnniversaryQuestComplete")
 			:Connect(function()
-				player:SetAttribute("SecretQuestAvailable", SecretQuestAccess.IsAvailable(player))
 				if SecretQuestAccess.IsAvailable(player) then
 					questService:ResumeSecretQuest(player)
 				end
@@ -71,52 +89,6 @@ function SecretQuestEntrance.Start(questService)
 	end
 
 	table.insert(connections, Players.PlayerAdded:Connect(watchPlayer))
-
-	table.insert(
-		connections,
-		ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
-			if
-				not Bindings.Get(prompt)
-				or busyPlayers[player]
-				or os.clock() < (nextInteractions[player] or 0)
-				or not canInteract(player, prompt)
-			then
-				return
-			end
-
-			busyPlayers[player] = true
-			nextInteractions[player] = os.clock() + 0.5
-			local success, err = pcall(function()
-				local quests = questService.PlayerQuests[player]
-				local quest = quests and quests.SecretQuest
-				local itemId = Bindings.Get(prompt).ItemId
-				if itemId then
-					if quest then
-						quest:Collect(itemId)
-					end
-					return
-				end
-
-				if not quest then
-					local request = questService:GiveQuest(player, "SecretQuest")
-					if request then
-						request:await()
-					end
-
-					quests = questService.PlayerQuests[player]
-					quest = quests and quests.SecretQuest
-				end
-
-				if quest and canInteract(player, prompt) then
-					quest:InteractWithTree(prompt)
-				end
-			end)
-			busyPlayers[player] = nil
-			if not success then
-				warn("[SecretQuest] Interaction failed:", err)
-			end
-		end)
-	)
 	table.insert(
 		connections,
 		Players.PlayerRemoving:Connect(function(player)
@@ -124,26 +96,36 @@ function SecretQuestEntrance.Start(questService)
 				playerConnections[player]:Disconnect()
 				playerConnections[player] = nil
 			end
-
-			busyPlayers[player] = nil
-			nextInteractions[player] = nil
 		end)
 	)
+
+	SecretQuestRelease.Start(function()
+		for _, player in Players:GetPlayers() do
+			if SecretQuestAccess.IsAvailable(player) then
+				questService:ResumeSecretQuest(player)
+			end
+		end
+	end)
 end
 
 function SecretQuestEntrance.Destroy()
+	started = false
+	SecretQuestRelease.Destroy()
+	for _, remove in unregister do
+		remove()
+	end
+
 	for _, connection in playerConnections do
 		connection:Disconnect()
 	end
 
-	table.clear(playerConnections)
 	for _, connection in connections do
 		connection:Disconnect()
 	end
 
+	table.clear(unregister)
+	table.clear(playerConnections)
 	table.clear(connections)
-	table.clear(busyPlayers)
-	table.clear(nextInteractions)
 end
 
 return SecretQuestEntrance

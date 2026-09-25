@@ -10,19 +10,10 @@ local anniversaryDestinationPlaceId = game.PlaceId == MQ_PLACE_ID and MQ_ANNIVER
 return {
 	SecretQuest = {
 		DisplayName = "SECRET QUEST",
-		Description = "Discover the Classic Tree's secret.",
+		Description = "A curious discovery.",
 		Objectives = {
 			{
 				DisplayName = SECRET_QUEST_HINT,
-				Type = "Event",
-			},
-			{
-				-- Ready for hand-in internally; keep the same riddle on screen.
-				DisplayName = SECRET_QUEST_HINT,
-				Type = "Event",
-			},
-			{
-				DisplayName = "Find your way home from classic Berry Avenue.",
 				Type = "Event",
 			},
 			{

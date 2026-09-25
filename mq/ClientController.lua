@@ -1,12 +1,10 @@
 -- roblox services
 
-local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- knit
 
 local Knit = require(ReplicatedStorage.Packages.Knit)
-local SecretQuestAccess = require(Knit.Shared.SecretQuestAccess)
 
 local QuestService
 
@@ -259,39 +257,6 @@ end
 
 function QuestController:KnitStart()
 	QuestService = Knit.GetService("QuestService")
-
-	local function refreshSecretPrompt(prompt)
-		if not prompt:IsA("ProximityPrompt") then
-			return
-		end
-
-		local available = SecretQuestAccess.IsAvailable(Knit.Player)
-		local quest = self.Quests.SecretQuest
-		local itemId = prompt:GetAttribute("InteractionKey")
-		if itemId then
-			prompt.Enabled = available
-				and quest ~= nil
-				and quest.State.Id == 1
-				and not (quest.State.Collected or {})[itemId]
-		else
-			prompt.Enabled = available
-		end
-	end
-
-	local function refreshSecretAvailability()
-		for _, prompt in CollectionService:GetTagged("InteractionPrompt") do
-			refreshSecretPrompt(prompt)
-		end
-
-		local quest = self.Quests.SecretQuest
-		if quest then
-			quest:Refresh()
-		end
-	end
-
-	refreshSecretAvailability()
-	CollectionService:GetInstanceAddedSignal("InteractionPrompt"):Connect(refreshSecretPrompt)
-	Knit.Player:GetAttributeChangedSignal("SecretQuestAvailable"):Connect(refreshSecretAvailability)
 
 	-- Subscribe before loading saved quests so new quest events cannot be missed.
 	QuestService.QuestReceived:Connect(function(questName, state)
